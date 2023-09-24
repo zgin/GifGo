@@ -1,4 +1,3 @@
-/* General styles */
 html {
     width: 500px;
     background-image: url('../images/starfield.gif');
@@ -40,12 +39,10 @@ ol {
     border-radius: .4em;
 }
 
-/* Form styles */
 input, select {
     background-color: #073642 !important;
 }
 
-/* Gif list styles */
 #gifList {
     padding: 0 0.5em 1.5em 0.5em;
 }
@@ -57,13 +54,11 @@ input, select {
     justify-content: center;
 }
 
-/* Button styles */
 .button-icon {
     display: inline-block;
     vertical-align: middle;
 }
 
-/* Container styles */
 .flex-container {
     background-color: #073642;
     display: flex;
