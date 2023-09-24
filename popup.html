@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Giphy Search and Copy</title>
+    <style>
+        
+    </style>
+    <script src="js/jquery-3.7.1.min.js"></script>
+    <link rel="stylesheet" href="css/bulmaswatch.slate.min.css">
+    <link rel="stylesheet" href="css/popup.css">
+    <script src="js/popup.js"></script>
+</head>
+<body>
+    <header class="navbar is-fixed-top">
+        <div class="field is-grouped">
+            <div class="field is-grouped">
+                <p class="control is-expanded">
+                    <input class="input" type="text" id="searchInput" placeholder="Search GIFs">
+                </p>
+                <p class="control">
+                    <button id="searchButton" class="button is-primary"> <!-- Apply Bulma classes as needed -->
+                        <span class="icon is-small"> <!-- 'is-small', 'is-medium', and 'is-large' are Bulma's size modifiers -->
+                            <img src="images/search.png" alt="Icon Description" class="button-icon">
+                        </span>
+                    </button>
+                </p>
+            </div>
+            <div class="field is-grouped">
+                <p class="control">
+                    <div class="select">
+                        <select id="limitSelect">
+                            <option value="10" selected>10</option>
+                            <option value="20">20</option>
+                            <option value="30">30</option>
+                            <option value="40">40</option>
+                            <option value="50">50</option>
+                        </select>
+                    </div>
+                </p>
+                <p class="control is-expanded">
+                    <div class="select">
+                        <select id="ratingSelect">
+                            <option value="Y">Y</option>
+                            <option value="G">G</option>
+                            <option value="PG">PG</option>
+                            <option value="PG-13" selected>PG-13</option>
+                            <option value="R">R</option>
+                        </select>
+                    </div>
+                </p>
+            </div>
+            <div class="field">
+                <p class="control">
+                    <button id="settingsButton" class="button is-primary"> <!-- Apply Bulma classes as needed -->
+                        <span class="icon is-small"> <!-- 'is-small', 'is-medium', and 'is-large' are Bulma's size modifiers -->
+                            <img src="images/settings.png" alt="Icon Description" class="button-icon">
+                        </span>
+                    </button>
+                </p>
+            </div>
+            
+        </div>
+    </header>
+    
+    <div id="gifList"></div>
+
+    <footer>
+        <div class="attribution">
+            <a href="https://giphy.com/" target="_blank">
+                <img src="images/giphy_attribution.gif" alt="Powered by Giphy">
+            </a>
+        </div>
+    </footer>
+    
+</body>
+</html>

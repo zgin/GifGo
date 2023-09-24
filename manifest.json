@@ -1,0 +1,26 @@
+{
+    "manifest_version": 3,
+    "name": "GifGo",
+    "version": "1.0",
+    "icons": {
+      "128": "images/gifgo_logo.png"
+    },
+    "description": "Search Giphy and copy GIF links",
+    "permissions": ["activeTab", "storage", "https://*/"],
+    "action": {
+      "default_popup": "popup.html"
+    },
+    "web_accessible_resources": [
+      {
+          "resources": ["jquery-3.7.0.min.js"],
+          "matches": ["<all_urls>"],
+          "use_dynamic_url": false
+      },
+      {
+          "resources": ["bulma-0.9.3.min.css"],
+          "matches": ["<all_urls>"],
+          "use_dynamic_url": false
+      }
+    ]
+}
+  

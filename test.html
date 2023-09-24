@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Giphy Search and Copy</title>
+    <style>
+        body {
+            width: 500px;  /* or whatever width you prefer */
+        }
+        .field {
+            margin: .5em;
+        }
+        
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            color: #b58900;
+            background-color: rgba(255, 255, 255, 0.7); /* semi-transparent white for visibility */
+            display: none; /* Initially hidden, display it when required */
+            justify-content: center; /* center the content horizontally */
+            align-items: center; /* center the content vertically */
+            display: none; /* Makes the above centering possible */
+            font-size: 1.2em; /* Optional: Set a font size for the overlay text */
+        }
+
+        .button-icon {
+            display: inline-block;
+            vertical-align: middle; /* To vertically center it with any adjacent text */
+        }
+
+        .column {
+            position: relative;
+            display: flex;
+            align-items: center; /* vertical alignment */
+            justify-content: center; /* horizontal alignment */
+        }
+
+        .flex-container {
+            display: flex;
+            align-items: center; /* vertical alignment */
+            justify-content: center; /* horizontal alignment */
+            height: 100%; /* take the full height of the column */
+            position: relative; /* for the absolute positioning of the overlay */
+        }
+
+    </style>
+    <script src="jquery-3.7.1.min.js"></script>
+    <link rel="stylesheet" href="bulmaswatch.slate.min.css">
+    <link rel="stylesheet" href="all.min.css">
+    <script src="popup.js"></script>
+</head>
+<body>
+    <nav class="navbar is-fixed-top" role="navigation" aria-label="main navigation">
+        <div class="navbar-item">
+            <div class="field is-grouped">
+                <div class="field is-grouped">
+                    <p class="control is-expanded">
+                        <input class="input" type="text" id="searchInput" placeholder="Search GIFs">
+                    </p>
+                    <p class="control">
+                        <button class="button is-primary"> <!-- Apply Bulma classes as needed -->
+                            <span class="icon is-small"> <!-- 'is-small', 'is-medium', and 'is-large' are Bulma's size modifiers -->
+                                <img src="media/magnify.png" alt="Icon Description" class="button-icon">
+                            </span>
+                        </button>
+                    </p>
+                </div>
+                <div class="field is-grouped">
+                    <p class="control">
+                        <div class="select">
+                            <select id="limitSelect">
+                                <option value="10" selected>10</option>
+                                <option value="20">20</option>
+                                <option value="30">30</option>
+                                <option value="40">40</option>
+                                <option value="50">50</option>
+                            </select>
+                        </div>
+                    </p>
+                    <p class="control is-expanded">
+                        <div class="select">
+                            <select id="ratingSelect">
+                                <option value="Y">Y</option>
+                                <option value="G">G</option>
+                                <option value="PG">PG</option>
+                                <option value="PG-13" selected>PG-13</option>
+                                <option value="R">R</option>
+                            </select>
+                        </div>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </nav>
+    <section class="section">
+        <div class="container">
+            <div id="gifList">
+            <div class="columns is-multiline is-mobile">
+                <div class="column is-half">
+                    <div class="flex-container">
+                        <div class="overlay overlay-gw3IWyGkC0rsazTi"></div>
+                        <img src="https://media0.giphy.com/media/gw3IWyGkC0rsazTi/200w.gif?cid=8a8eef1a4d4lug4lcb2s9ly4fo1xsee41b8bc2ydu5e25gsp&amp;ep=v1_gifs_search&amp;rid=200w.gif&amp;ct=g" class="gifImage gw3IWyGkC0rsazT2">
+                    </div>
+                </div>
+                <div class="column is-half">
+                    <div class="flex-container">
+                        <div class="overlay overlay-gw3IWyGkC0rsazTi"></div>
+                        <img src="https://media0.giphy.com/media/gw3IWyGkC0rsazTi/200w.gif?cid=8a8eef1a4d4lug4lcb2s9ly4fo1xsee41b8bc2ydu5e25gsp&amp;ep=v1_gifs_search&amp;rid=200w.gif&amp;ct=g" class="gifImage gw3IWyGkC0rsazTi">
+                    </div>
+                </div>
+                <div class="column is-half">
+                <code>is-half</code>
+                </div>
+                <div class="column is-half">
+                <code>is-half</code>
+                </div>
+                <div class="column is-half">
+                <code>is-half</code>
+                </div>
+            </div>
+            </div>
+        </div>
+    </section>
+    
+</body>
+</html>
