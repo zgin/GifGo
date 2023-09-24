@@ -77,7 +77,6 @@ function searchGifs() {
     let limit = $("#limitSelect").val();
     let rating = $("#ratingSelect").val();
 
-    // Show loading bar
     let progressBar = $('<progress>').addClass('progress is-medium is-dark').attr('max', '100');
     $("#gifList").empty().append(progressBar);
 
@@ -127,7 +126,7 @@ function showErrorNotification(message, response, clearGifList = false) {
 function populateGifList(gifs) {
     $("#gifList").empty();
 
-    let columnClass = `is-half`; // Calculate Bulma column class
+    let columnClass = `is-half`;
     let columns = $('<div>').addClass('columns is-mobile is-multiline');
     columns.id = 'gifColumns';
         $("#gifList").append(columns);
@@ -154,7 +153,7 @@ function copyGifLink(gif) {
     $.each(sortedSizes, function(index, size) {
         if (size.size && parseInt(size.size) < 2000000) {
             gifUrl = size.url;
-            return false; // exit the loop
+            return false;
         }
     });
 

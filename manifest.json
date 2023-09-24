@@ -6,7 +6,7 @@
       "128": "images/gifgo_logo.png"
     },
     "description": "Search Giphy and copy GIF links",
-    "permissions": ["activeTab", "storage", "https://*/"],
+    "permissions": ["storage"],
     "action": {
       "default_popup": "popup.html"
     },
