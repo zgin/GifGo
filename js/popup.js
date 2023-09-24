@@ -1,5 +1,4 @@
 let API_KEY = '';
-chrome.storage.sync.remove('giphyApiKey');
 
 $(function() {
 
