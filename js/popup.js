@@ -23,6 +23,7 @@ $(function() {
             searchGifs();
         }
     });
+    $("#searchInput").focus();
     
 });
 
@@ -76,6 +77,8 @@ function searchGifs() {
     let limit = $("#limitSelect").val();
     let rating = $("#ratingSelect").val();
 
+    $("#gifList").empty();
+
     let progressBar = $('<progress>').addClass('progress is-medium is-dark').attr('max', '100');
     $("#gifList").empty().append(progressBar);
 
@@ -90,7 +93,6 @@ function searchGifs() {
         if (response.meta.status === 401) {
             showApiKeyInput(false);
         }   
-        
     });
 }
 
