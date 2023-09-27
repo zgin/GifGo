@@ -14,9 +14,12 @@
     <header class="navbar is-fixed-top">
         <div class="field is-grouped">
             <div class="field is-grouped">
-                <p class="control is-expanded">
+                <div class="control is-expanded input-group" id="searchInputContainer">
                     <input class="input" type="text" id="searchInput" placeholder="Search GIFs">
-                </p>
+                    <div class="btn btn-outline-secondary" type="button" id="clearSearchButton">
+                        <img src="images/close.png" alt="Icon Description" class="button-icon">
+                    </div>
+                </div>
                 <p class="control">
                     <button id="searchButton" class="button is-primary">
                         <span class="icon is-small">
@@ -61,10 +64,13 @@
             
         </div>
     </header>
+    <div id="gifListContainer">
+        <div id="gifList"></div>
+        <div class="scrollbar-trigger"></div>
+    </div>
     
-    <div id="gifList"></div>
 
-    <footer>
+    <footer id="footer">
         <div class="attribution">
             <a href="https://giphy.com/" target="_blank">
                 <img src="images/giphy_attribution.gif" alt="Powered by Giphy">

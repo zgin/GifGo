@@ -3,9 +3,20 @@ let API_KEY = '';
 $(function() {
 
     const navbarHeight = $('.navbar').outerHeight();
-    const navbarFontSize = parseInt($('.navbar').css('font-size'));
-    const padding = navbarHeight + (navbarFontSize * 1.5);
+    const footerHeight = $('#footer').outerHeight();
+    console.log(footerHeight);
+    console.log(navbarHeight);
+    const padding = navbarHeight;
     $('body').css('padding-top', padding + 'px');
+    $('#gifList').css('max-height', 600 - (navbarHeight + footerHeight) - 10 + 'px');
+    $('#gifListContainer').css('max-height', 600 - (navbarHeight + footerHeight) - 10 + 'px')
+
+    $(document).mousemove(function(e) {
+        let ele = $('#gifList');
+        let distance = ele.offset().left + ele.outerWidth() - e.pageX;
+        distance < 15 && distance > -15 ? ele.addClass('more-width') : ele.removeClass('more-width');
+    });
+
 
     // Get user's Giphy API key from storage
     chrome.storage.sync.get('giphyApiKey', function(data) {
@@ -17,12 +28,42 @@ $(function() {
     });
 
     $("#searchButton").click(searchGifs);
-    $('#settingsButton').click(showApiKeyInput);
+    $('#settingsButton').click(function() {
+        let imgSrc = $(this).find('img').attr('src');
+        if (imgSrc === 'images/settings.png') {
+            showApiKeyInput();
+        } else if (imgSrc === 'images/close.png') {
+            $("#gifList").empty();
+        }
+        $(this).find('img').animate({width: 'toggle'}, 200, function() {
+            $(this).attr('src', imgSrc === 'images/settings.png' ? 'images/close.png' : 'images/settings.png').animate({width: 'toggle'}, 200);
+        });
+    });
     $("#searchInput").keypress(function(event) {
         if (event.which == 13) { // Enter key
             searchGifs();
         }
     });
+    $('#clearSearchButton').click(function() {
+        $('#searchInput').val('');
+        $("#gifList").empty();
+    });
+    $('#clearSearchButton').hide(); // Hide the button by default
+
+    $('#searchInput').on('input', function() {
+        if ($(this).val().length > 0) {
+            $('#clearSearchButton').show(); // Show the button when there is content
+        } else {
+            $('#clearSearchButton').hide(); // Hide the button when there is no content
+        }
+    });
+
+    $('#clearSearchButton').click(function() {
+        $('#searchInput').val('');
+        $("#gifList").empty();
+        $('#clearSearchButton').hide(); // Hide the button after clearing the input
+    });
+
     $("#searchInput").focus();
     
 });
@@ -134,7 +175,7 @@ function populateGifList(gifs) {
 
     $.each(gifs, function(index, gif) {
         let gifId = gif.id;
-        let gifColumn = $('<div>').addClass('column ' + columnClass).attr('data-gif-id', gifId);
+        let gifColumn = $('<div>').addClass('column gif-column ' + columnClass).attr('data-gif-id', gifId);
         let flexContainer = $('<div>').addClass('flex-container');
         let img = $('<img>').attr('src', gif.images.fixed_width.url).addClass('gifImage ' + gifId).click(() => copyGifLink(gif));
         let overlay = $('<div>').addClass('overlay overlay-' + gifId);

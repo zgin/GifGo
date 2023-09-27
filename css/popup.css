@@ -1,7 +1,13 @@
 html {
-    width: 500px;
     background-image: url('../images/starfield.gif');
     background-repeat: repeat;
+    overflow-y: hidden;
+    width: 550px;
+    max-height: 600px;
+}
+body {
+    width: 550px;
+    max-height: 600px;
 }
 
 ol {
@@ -18,9 +24,33 @@ ol {
 }
 
 .navbar {
-    border-radius: 0 0 .4em .4em !important;
+    border-radius: 0 0 10px 10px !important;
     background-color: #002b36 !important;
     border-bottom: 2px solid black;
+}
+
+#searchInput {
+    padding-right: 2em;
+}
+
+#searchInputContainer {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+  
+#clearSearchButton {
+    background-color: transparent;
+    position: absolute;
+    right: 5px;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0.3;
+    cursor: pointer;
+}
+
+#clearSearchButton:hover {
+    opacity: 1;
 }
 
 .overlay {
@@ -44,8 +74,28 @@ input, select {
 }
 
 #gifList {
-    padding: 0 0.5em 1.5em 0.5em;
+    padding: 1em 1em 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-mask-image: -webkit-gradient(linear, center top, center bottom,             
+			color-stop(0,  rgba(0,0,0,0)),
+            color-stop(0.03,  rgba(0,0,0,1)),
+			color-stop(0.95,  rgba(0,0,0,1)),
+			color-stop(1.00,  rgba(0,0,0,0)));
+    mask-image: -webkit-gradient(linear, center top, center bottom, 
+            color-stop(0,  rgba(0,0,0,0)),
+            color-stop(0.03,  rgba(0,0,0,1)),
+            color-stop(0.95,  rgba(0,0,0,1)),
+            color-stop(1.00,  rgba(0,0,0,0)));
+
+    &::-webkit-scrollbar {
+            width: 5px;
+        }
+    &.more-width::-webkit-scrollbar {
+            width: 15px;
+        }
 }
+
 
 .column {
     position: relative;
@@ -67,6 +117,52 @@ input, select {
     height: 100%;
     width: 100%;
     position: relative;
-    padding: 1.5em 0em;
+    padding: 1em;
     border-radius: .4em;
+    cursor: pointer;
+    transition-delay: 1s; 
 }
+
+.flex-container:hover::before {
+    content: "click anywhere to copy to clipboard";
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #000;
+    color: #839496;
+    padding: 0.5em;
+    border-radius: 0.2em;
+    font-size: 0.8em;
+    white-space: nowrap;
+    opacity: 0.8;
+    border-radius: 0px 0px 10px 10px;
+}
+
+#footer {
+    height: 50px;
+}
+
+#footer img {
+    height: 100%;
+}
+
+/* scrollbars */
+/* Chrome, Edge, and Safari */
+*::-webkit-scrollbar {
+    width: 5px;
+    &.more-width::-webkit-scrollbar {
+        width: 10px;
+    }
+}
+
+*::-webkit-scrollbar-track {
+    background: #2aa198;
+}
+
+*::-webkit-scrollbar-thumb {
+    background-color: #d33682;
+    border-radius: 10px;
+    border: 1px solid #002b36;
+}
+
