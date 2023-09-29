@@ -200,7 +200,8 @@ function copyGifLink(gif) {
     });
 
     if (gifUrl) {
-        copyToClipboard(gifUrl);
+        let urlWithoutParams = gifUrl.split('?')[0]; // Extract the URL without the query parameters
+        copyToClipboard(urlWithoutParams);
         showOverlayFeedback(gif);
     }
 }
