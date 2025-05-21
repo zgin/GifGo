@@ -64,9 +64,26 @@
             
         </div>
     </header>
-    <div id="gifListContainer">
+
+    <div class="tabs is-centered">
+        <ul>
+            <li class="is-active" id="searchTabLi"><a id="searchTab">Search</a></li>
+            <li id="recentsTabLi"><a id="recentsTab">Recents</a></li>
+            <li id="favoritesTabLi"><a id="favoritesTab">Favorites</a></li>
+        </ul>
+    </div>
+
+    <div id="gifListContainer"> <!-- This will be the search view -->
         <div id="gifList"></div>
         <div class="scrollbar-trigger"></div>
+    </div>
+
+    <div id="recentsView" style="display: none;">
+        <!-- Content for Recents view will go here -->
+    </div>
+
+    <div id="favoritesView" style="display: none;">
+        <!-- Content for Favorites view will go here -->
     </div>
     
 
