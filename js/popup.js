@@ -91,7 +91,8 @@ function wireEvents() {
             doSearch();
         }
     });
-    // Search as you type, lightly debounced; an emptied box returns to landing.
+    // With live search on, search as you type (debounced); otherwise wait for
+    // Enter or the search button. An emptied box always returns to landing.
     $('#searchInput').addEventListener('input', (e) => {
         const term = e.target.value.trim();
         $('#clearSearchButton').hidden = e.target.value.length === 0;
@@ -100,7 +101,7 @@ function wireEvents() {
             if (view === 'search') renderLanding();
             return;
         }
-        searchTimer = setTimeout(doSearch, 300);
+        if (settings.liveSearch) searchTimer = setTimeout(doSearch, 300);
     });
     $('#clearSearchButton').addEventListener('click', () => {
         clearTimeout(searchTimer);
@@ -127,7 +128,7 @@ function wireEvents() {
 
     $('#saveKeyButton').addEventListener('click', onSaveKey);
     $('#removeKeyButton').addEventListener('click', onRemoveKey);
-    for (const id of ['defaultActionSelect', 'limitSelect', 'ratingSelect', 'autoCloseCheck']) {
+    for (const id of ['defaultActionSelect', 'limitSelect', 'ratingSelect', 'autoCloseCheck', 'liveSearchCheck']) {
         $('#' + id).addEventListener('change', onDefaultsChange);
     }
 }
@@ -238,15 +239,21 @@ async function renderLanding() {
         }
         results.append(masonry(recents, {}, 3));
     } else {
-        results.append(el('div', { class: 'loader' }));
-        try {
-            const gifs = await trendingGifs(apiKey, settings);
+        const cacheKey = `trending|${settings.limit}|${settings.rating}`;
+        let gifs = searchCache.get(cacheKey);
+        if (!gifs) {
+            results.append(el('div', { class: 'loader' }));
+            try {
+                gifs = (await trendingGifs(apiKey, settings)).map(normalizeGif);
+                searchCache.set(cacheKey, gifs);
+            } catch (err) {
+                if (view === 'landing') renderError(err);
+                return;
+            }
             if (view !== 'landing') return;
             results.querySelector('.loader')?.remove();
-            results.append(masonry(gifs.map(normalizeGif), {}, 3));
-        } catch (err) {
-            if (view === 'landing') renderError(err);
         }
+        results.append(masonry(gifs, {}, 3));
     }
 }
 
@@ -280,18 +287,29 @@ async function doSearch() {
 
     const results = $('#results');
     results.innerHTML = '';
-    results.append(el('div', { class: 'loader' }));
 
+    // Repeats of a search this session are free — spare the hourly quota.
+    const cacheKey = `${term}|${settings.limit}|${settings.rating}`;
+    const cached = searchCache.get(cacheKey);
+    if (cached) {
+        renderResults(matchFavorites(term), cached);
+        return;
+    }
+
+    results.append(el('div', { class: 'loader' }));
     try {
-        const gifs = await searchGifs(apiKey, term, settings);
+        const gifs = (await searchGifs(apiKey, term, settings)).map(normalizeGif);
+        searchCache.set(cacheKey, gifs);
         // A newer keystroke may have superseded this response.
         if (view !== 'search' || $('#searchInput').value.trim() !== term) return;
-        renderResults(matchFavorites(term), gifs.map(normalizeGif));
+        renderResults(matchFavorites(term), gifs);
     } catch (err) {
         renderError(err);
         if (err.status === 401) openSettings('Giphy rejected the API key. Double-check it below.');
     }
 }
+
+const searchCache = new Map();
 
 function normalizeGif(gif) {
     const images = gif.images || {};
@@ -585,6 +603,8 @@ function applySettingsToForm() {
     $('#limitSelect').value = String(settings.limit);
     $('#ratingSelect').value = settings.rating;
     $('#autoCloseCheck').checked = settings.autoClose;
+    $('#liveSearchCheck').checked = settings.liveSearch;
+    $('#searchInput').placeholder = settings.liveSearch ? 'Search GIFs' : 'Search GIFs — press Enter';
 }
 
 async function onDefaultsChange() {
@@ -593,7 +613,9 @@ async function onDefaultsChange() {
         limit: Number($('#limitSelect').value),
         rating: $('#ratingSelect').value,
         autoClose: $('#autoCloseCheck').checked,
+        liveSearch: $('#liveSearchCheck').checked,
     });
+    applySettingsToForm();
 }
 
 async function onSaveKey() {

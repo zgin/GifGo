@@ -3,6 +3,34 @@
 Feature ideas not in the current release. Ordered by how much each shortens the
 core loop: urge → find → paste.
 
+## GifGo server: Klipy-backed proxy (removes the BYO-API-key requirement)
+
+Klipy (klipy.com/developers, docs.klipy.com) is free: test keys are limited to
+100 req/hour like Giphy dev keys, but **production keys are unlimited** (their
+model monetizes with optional ad content, not API fees). Plan:
+
+- Small proxy service (host it ourselves): `GET /search?q=`, `GET /trending`.
+  The Klipy production key lives only on the server; the extension ships with
+  no key requirement at all. Same backend later powers a web app.
+- **Server-side response cache** is the workhorse: popular search terms and
+  trending are served from cache (60s–1h TTL), so even live typing across all
+  users costs few upstream calls.
+- **Abuse control, layered** (skip real user accounts — OAuth for a GIF picker
+  kills the simple-and-clean ethos):
+  1. Per-IP token-bucket rate limit (e.g. 30 searches/min) + a global cap.
+  2. Anonymous install token: extension generates a random ID on install,
+     server rate-limits per token as well as per IP.
+  3. Check the `Origin: chrome-extension://<id>` header — spoofable by
+     scripts, but blocks lazy reuse; combined with 1+2 it is plenty until
+     the extension is popular enough to have a real abuse problem.
+- Extension keeps a provider setting: "GifGo server (no key needed)" vs
+  "My own Giphy key" — privacy escape hatch and failover if the server dies.
+  `js/api.js` is already the provider seam; add a Klipy response adapter
+  (renditions + width/height mapping) once a platform is registered and the
+  docs are readable.
+- Once the server exists, flip `liveSearch` default to on when the provider
+  is the GifGo server.
+
 ## Tier 1 — loop shorteners
 - **Trending on open**: populate the popup from Giphy's trending endpoint
   (same API key) instead of opening empty.

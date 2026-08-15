@@ -10,6 +10,9 @@ const DEFAULT_SETTINGS = {
     rating: 'pg-13',
     autoClose: true,
     landing: 'recents',    // 'recents' | 'trending'
+    // Off by default: Giphy developer keys allow only 100 requests/hour,
+    // and typing burns several requests per search.
+    liveSearch: false,
 };
 
 export async function getSettings() {
