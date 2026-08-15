@@ -50,3 +50,28 @@ export async function saveFavorite(fav) {
 export async function removeFavorite(id) {
     await sync.remove(FAV_PREFIX + id);
 }
+
+// Usage counts: one synced map of gif id -> {n: times copied, t: last copied}.
+// Pruned to the most recently used entries to stay under the 8KB per-item quota.
+const USAGE_KEY = 'usage';
+const USAGE_MAX = 150;
+
+export async function getUsage() {
+    const { [USAGE_KEY]: usage } = await sync.get(USAGE_KEY);
+    return usage || {};
+}
+
+export async function recordUse(id) {
+    const usage = await getUsage();
+    const entry = usage[id] || { n: 0 };
+    entry.n += 1;
+    entry.t = Date.now();
+    usage[id] = entry;
+    const ids = Object.keys(usage);
+    if (ids.length > USAGE_MAX) {
+        ids.sort((a, b) => usage[b].t - usage[a].t);
+        for (const stale of ids.slice(USAGE_MAX)) delete usage[stale];
+    }
+    await sync.set({ [USAGE_KEY]: usage });
+    return usage;
+}

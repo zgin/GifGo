@@ -3,6 +3,7 @@ import {
     getSettings, saveSettings,
     getApiKey, setApiKey, clearApiKey,
     getFavorites, saveFavorite, removeFavorite,
+    getUsage, recordUse,
 } from './storage.js';
 import { copyText, copyImage } from './clipboard.js';
 
@@ -11,7 +12,11 @@ const $ = (sel) => document.querySelector(sel);
 let settings;
 let apiKey = null;
 let favorites = {};        // id -> favorite
+let usage = {};            // id -> {n: times copied, t: last copied}
 let view = 'search';       // 'search' | 'favorites' | 'settings'
+
+const uses = (id) => usage[id]?.n || 0;
+const byMostUsed = (a, b) => uses(b.id) - uses(a.id) || b.addedAt - a.addedAt;
 
 const ICONS = {
     link: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>',
@@ -54,7 +59,7 @@ function hint(text) {
 // ---------- init ----------
 
 async function init() {
-    [settings, apiKey, favorites] = await Promise.all([getSettings(), getApiKey(), getFavorites()]);
+    [settings, apiKey, favorites, usage] = await Promise.all([getSettings(), getApiKey(), getFavorites(), getUsage()]);
     applySettingsToForm();
     wireEvents();
 
@@ -138,7 +143,7 @@ function matchFavorites(term) {
             const haystack = (fav.tags.join(' ') + ' ' + fav.title).toLowerCase();
             return words.every((word) => haystack.includes(word));
         })
-        .sort((a, b) => b.addedAt - a.addedAt);
+        .sort(byMostUsed);
 }
 
 function renderResults(favMatches, gifs) {
@@ -184,6 +189,9 @@ function makeTile(data, opts = {}) {
     }, el('figure', { class: 'imgwrap' },
         el('img', { src: data.preview, alt: data.title || 'GIF', loading: 'lazy' }),
         opts.badge ? el('span', { class: 'fav-badge' }, '♥ saved') : null,
+        opts.tags && uses(data.id) > 0
+            ? el('span', { class: 'use-count', title: `Copied ${uses(data.id)} times` }, `${uses(data.id)}×`)
+            : null,
         el('div', { class: 'actions' }, actionButtons, heartButton),
         el('div', { class: 'overlay' }),
     ));
@@ -211,6 +219,7 @@ async function runAction(key, data, tile) {
     try {
         await action.run(data);
         flash(tile, action.done);
+        recordUse(data.id).then((u) => { usage = u; }).catch(() => {});
     } catch (err) {
         console.error(err);
         flash(tile, 'Copy failed', { error: true });
@@ -261,7 +270,7 @@ function renderFavoritesView() {
     results.hidden = false;
     results.innerHTML = '';
 
-    const favs = Object.values(favorites).sort((a, b) => b.addedAt - a.addedAt);
+    const favs = Object.values(favorites).sort(byMostUsed);
     results.append(el('div', { class: 'caption', id: 'favCaption' }, `Favorites (${favs.length})`));
     if (!favs.length) {
         results.append(hint('No favorites yet — hover a GIF and click the ♥.'));
@@ -294,7 +303,7 @@ function makeTagsRow(fav) {
                     },
                 }, '✕'))));
 
-        const input = el('input', { class: 'tag-input', placeholder: '+ tag' });
+        const input = el('input', { class: 'tag-input', placeholder: '+ add tag', title: 'Type a tag and press Enter' });
         input.addEventListener('keydown', async (e) => {
             if (e.key !== 'Enter') return;
             const tag = input.value.trim().toLowerCase();
