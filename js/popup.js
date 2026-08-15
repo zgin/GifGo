@@ -201,7 +201,7 @@ function flash(tile, text, { error = false, sticky = false } = {}) {
     overlay.classList.add('show');
     clearTimeout(flashTimers.get(tile));
     if (!sticky) {
-        flashTimers.set(tile, setTimeout(() => overlay.classList.remove('show'), 1100));
+        flashTimers.set(tile, setTimeout(() => overlay.classList.remove('show'), 800));
     }
 }
 
