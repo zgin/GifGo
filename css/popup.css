@@ -231,32 +231,48 @@ body {
 
 /* hover action bar */
 
-/* Two-stage action bar. Stage 1 (tile hover): a slim, dim strip hugging the
-   bottom edge so the GIF stays fully readable. Stage 2 (cursor in the bottom
-   quarter): the bar grows upward from its anchored bottom edge and solidifies. */
+/* Two-stage action bar. Stage 1 (tile hover): a translucent frosted pill you
+   can "sorta see" at the bottom edge. Stage 2 (cursor anywhere in the bottom
+   quarter): the pill turns opaque and the buttons grow — vertically only, at
+   fixed widths, so nothing slides sideways out from under the cursor. */
 .actions {
     position: absolute;
     left: 0;
     right: 0;
     bottom: 0;
-    height: 25%;
+    height: 25%;    /* the whole bottom quarter is the hover zone */
     display: flex;
     justify-content: center;
     align-items: flex-end;
-    gap: 3px;
-    padding: 0 4px 3px;
-    background: linear-gradient(transparent, rgba(0, 43, 54, 0.5));
+    padding: 0 4px 4px;
     opacity: 0;
     transition: opacity 0.1s ease 0.07s;
 }
 
 .tile:hover .actions {
-    opacity: 0.4;
+    opacity: 0.55;
 }
 
-.actions:hover {
+.tile:hover .actions:hover {
     opacity: 1;
-    background: linear-gradient(transparent 25%, rgba(0, 43, 54, 0.85));
+}
+
+/* The contained bar: blur + border keep it legible over busy GIFs */
+.actions .bar {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 2px 3px;
+    background: rgba(0, 43, 54, 0.55);
+    border: 1px solid rgba(147, 161, 161, 0.4);
+    border-radius: 7px;
+    backdrop-filter: blur(3px);
+    transition: background 0.1s ease, border-color 0.1s ease;
+}
+
+.actions:hover .bar {
+    background: rgba(0, 43, 54, 0.92);
+    border-color: var(--base01);
 }
 
 .actions button {
@@ -264,26 +280,24 @@ body {
     align-items: center;
     justify-content: center;
     gap: 1px;
-    width: 20px;
-    height: 13px;
-    background: rgba(7, 54, 66, 0.9);
-    border: 1px solid var(--base01);
-    border-radius: 4px;
+    width: 26px;
+    height: 12px;    /* grows vertically only */
+    background: none;
+    border: none;
+    border-radius: 5px;
     color: var(--base1);
     cursor: pointer;
     padding: 0;
-    transition: width 0.1s ease, height 0.1s ease;
+    transition: height 0.1s ease, background-color 0.1s ease;
 }
 
 .actions:hover button {
-    width: 27px;
     height: 22px;
-    border-radius: 5px;
 }
 
 .actions button:hover {
     color: var(--cyan);
-    border-color: var(--cyan);
+    background: rgba(7, 54, 66, 0.95);
 }
 
 .actions .icon svg {

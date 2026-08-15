@@ -256,7 +256,7 @@ function makeTile(data, opts = {}) {
         opts.tags && uses(data.id) > 0
             ? el('span', { class: 'use-count', title: `Copied ${uses(data.id)} times` }, `${uses(data.id)}×`)
             : null,
-        el('div', { class: 'actions' }, actionButtons, heartButton),
+        el('div', { class: 'actions' }, el('div', { class: 'bar' }, actionButtons, heartButton)),
         el('div', { class: 'overlay' }),
     ));
 
