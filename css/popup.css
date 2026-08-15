@@ -134,7 +134,10 @@ body {
     flex: 1 1 auto;
     overflow-y: auto;
     overflow-x: hidden;
-    padding: 10px 10px 16px;
+    /* right padding is small because the 14px scrollbar gutter provides the
+       rest — total right inset matches the other sides, so columns never
+       shift when the thumb fattens */
+    padding: 10px 4px 16px 10px;
     -webkit-mask-image: linear-gradient(to bottom,
             transparent 0%, black 3%, black 95%, transparent 100%);
     mask-image: linear-gradient(to bottom,
@@ -583,9 +586,11 @@ body {
 
 /* ---------- scrollbar ---------- */
 
-#content::-webkit-scrollbar,
-.notification pre::-webkit-scrollbar {
-    width: 8px;
+/* The scrollbar element is a constant 14px so layout never changes; the thumb
+   is drawn slim inside it via a transparent border. Nearing the right edge
+   shrinks the border, fattening the thumb into the gutter — easier to grab. */
+#content::-webkit-scrollbar {
+    width: 14px;
 }
 
 #content::-webkit-scrollbar-track {
@@ -594,6 +599,20 @@ body {
 
 #content::-webkit-scrollbar-thumb {
     background: var(--magenta);
-    border: 1px solid var(--base03);
+    background-clip: padding-box;
+    border: 4px solid transparent;
+    border-radius: 10px;
+}
+
+#content.wide-scroll::-webkit-scrollbar-thumb {
+    border-width: 1px;
+}
+
+.notification pre::-webkit-scrollbar {
+    width: 8px;
+}
+
+.notification pre::-webkit-scrollbar-thumb {
+    background: var(--magenta);
     border-radius: 10px;
 }

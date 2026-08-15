@@ -100,6 +100,14 @@ function wireEvents() {
         view === 'settings' ? closeSettings() : openSettings();
     });
 
+    // v1 nicety: nearing the right edge fattens the scrollbar thumb into the
+    // gutter (pure repaint — the scrollbar element itself never changes size).
+    const content = $('#content');
+    document.addEventListener('mousemove', (e) => {
+        const edge = content.getBoundingClientRect().right;
+        content.classList.toggle('wide-scroll', e.clientX > edge - 20 && e.clientX <= edge);
+    });
+
     $('#saveKeyButton').addEventListener('click', onSaveKey);
     $('#removeKeyButton').addEventListener('click', onRemoveKey);
     for (const id of ['defaultActionSelect', 'limitSelect', 'ratingSelect']) {
