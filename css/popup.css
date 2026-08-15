@@ -134,7 +134,11 @@ body {
     flex: 1 1 auto;
     overflow-y: auto;
     overflow-x: hidden;
-    padding: 10px;
+    padding: 10px 10px 16px;
+    -webkit-mask-image: linear-gradient(to bottom,
+            transparent 0%, black 3%, black 95%, transparent 100%);
+    mask-image: linear-gradient(to bottom,
+            transparent 0%, black 3%, black 95%, transparent 100%);
 }
 
 .caption {
@@ -164,10 +168,13 @@ body {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 10px;
+    align-items: start;
 }
 
 .tile {
     position: relative;
+    display: flex;
+    flex-direction: column;
     background: var(--base02);
     border-radius: 8px;
     overflow: hidden;
@@ -190,18 +197,23 @@ body {
     transform-origin: right center;
 }
 
+/* GIFs come in every aspect ratio: show them whole at natural proportions,
+   centered on the tile's background, never cropped. */
 .imgwrap {
     position: relative;
     margin: 0;
-    aspect-ratio: 1;
-    overflow: hidden;
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
 }
 
 .imgwrap img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+    max-width: 100%;
+    height: auto;
     display: block;
+    border-radius: 4px;
 }
 
 .fav-badge {
