@@ -1,9 +1,10 @@
-import { searchGifs, validateKey } from './api.js';
+import { searchGifs, trendingGifs, validateKey } from './api.js';
 import {
     getSettings, saveSettings,
     getApiKey, setApiKey, clearApiKey,
     getFavorites, saveFavorite, removeFavorite,
     getUsage, recordUse,
+    getRecents, addRecent,
 } from './storage.js';
 import { copyText, copyImage } from './clipboard.js';
 
@@ -13,7 +14,9 @@ let settings;
 let apiKey = null;
 let favorites = {};        // id -> favorite
 let usage = {};            // id -> {n: times copied, t: last copied}
-let view = 'search';       // 'search' | 'favorites' | 'settings'
+let view = 'search';       // 'landing' | 'search' | 'favorites' | 'settings'
+let selected = null;       // keyboard-selected tile element
+const tileData = new WeakMap();
 
 const uses = (id) => usage[id]?.n || 0;
 const byMostUsed = (a, b) => uses(b.id) - uses(a.id) || b.addedAt - a.addedAt;
@@ -72,28 +75,42 @@ async function init() {
 
     if (!apiKey) {
         openSettings('Add your Giphy API key to get started.');
-    } else if (Object.keys(favorites).length) {
-        renderFavoritesView();
     } else {
-        $('#results').append(hint('Search for GIFs to get going.'));
+        renderLanding();
     }
     $('#searchInput').focus();
 }
 
+let searchTimer;
+
 function wireEvents() {
     $('#searchButton').addEventListener('click', doSearch);
     $('#searchInput').addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') doSearch();
+        if (e.key === 'Enter') {
+            clearTimeout(searchTimer);
+            doSearch();
+        }
     });
+    // Search as you type, lightly debounced; an emptied box returns to landing.
     $('#searchInput').addEventListener('input', (e) => {
+        const term = e.target.value.trim();
         $('#clearSearchButton').hidden = e.target.value.length === 0;
+        clearTimeout(searchTimer);
+        if (!term) {
+            if (view === 'search') renderLanding();
+            return;
+        }
+        searchTimer = setTimeout(doSearch, 300);
     });
     $('#clearSearchButton').addEventListener('click', () => {
+        clearTimeout(searchTimer);
         $('#searchInput').value = '';
         $('#clearSearchButton').hidden = true;
-        $('#results').innerHTML = '';
+        renderLanding();
         $('#searchInput').focus();
     });
+
+    document.addEventListener('keydown', onGridKeydown);
 
     $('#favoritesButton').addEventListener('click', renderFavoritesView);
     $('#settingsButton').addEventListener('click', () => {
@@ -110,9 +127,142 @@ function wireEvents() {
 
     $('#saveKeyButton').addEventListener('click', onSaveKey);
     $('#removeKeyButton').addEventListener('click', onRemoveKey);
-    for (const id of ['defaultActionSelect', 'limitSelect', 'ratingSelect']) {
+    for (const id of ['defaultActionSelect', 'limitSelect', 'ratingSelect', 'autoCloseCheck']) {
         $('#' + id).addEventListener('change', onDefaultsChange);
     }
+}
+
+// ---------- keyboard navigation ----------
+
+function select(tile) {
+    if (selected) selected.classList.remove('selected');
+    selected = tile || null;
+    if (selected) {
+        selected.classList.add('selected');
+        selected.scrollIntoView({ block: 'nearest' });
+    }
+}
+
+// Geometric nearest-neighbor: works for masonry, where DOM order is column-major.
+function moveSelection(dir) {
+    const tiles = [...$('#results').querySelectorAll('.tile')];
+    if (!tiles.length) return;
+    if (!selected || !tiles.includes(selected)) {
+        select(tiles[0]);
+        return;
+    }
+    const cur = selected.getBoundingClientRect();
+    const cx = cur.left + cur.width / 2;
+    const cy = cur.top + cur.height / 2;
+    let best = null;
+    let bestScore = Infinity;
+    for (const tile of tiles) {
+        if (tile === selected) continue;
+        const r = tile.getBoundingClientRect();
+        const dx = r.left + r.width / 2 - cx;
+        const dy = r.top + r.height / 2 - cy;
+        const forward = dir.x * dx + dir.y * dy;
+        if (forward <= 1) continue;
+        const score = forward + Math.abs(dir.x ? dy : dx) * 2.5;
+        if (score < bestScore) {
+            bestScore = score;
+            best = tile;
+        }
+    }
+    if (best) select(best);
+}
+
+const ARROWS = {
+    ArrowLeft: { x: -1, y: 0 },
+    ArrowRight: { x: 1, y: 0 },
+    ArrowUp: { x: 0, y: -1 },
+    ArrowDown: { x: 0, y: 1 },
+};
+
+function onGridKeydown(e) {
+    if (view === 'settings') return;
+    const target = e.target;
+    if (target.classList?.contains('tag-input')) return;
+    const inSearchBox = target === $('#searchInput');
+
+    const dir = ARROWS[e.key];
+    if (dir) {
+        // Arrows other than Down keep moving the caret while typing.
+        if (inSearchBox && e.key !== 'ArrowDown' && !selected) return;
+        e.preventDefault();
+        if (inSearchBox) target.blur();
+        moveSelection(dir);
+        return;
+    }
+
+    if (!selected || !selected.isConnected) return;
+    const data = tileData.get(selected);
+    if (!data) return;
+
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        runAction(settings.defaultAction, data, selected);
+    } else if (e.key === 'Escape') {
+        select(null);
+        $('#searchInput').focus();
+    } else if (!inSearchBox && e.key.toLowerCase() === 'f') {
+        e.preventDefault();
+        selected.querySelector('.heart')?.click();
+    } else if (!inSearchBox && ['1', '2', '3', '4'].includes(e.key)) {
+        e.preventDefault();
+        runAction(Object.keys(ACTIONS)[Number(e.key) - 1], data, selected);
+    }
+}
+
+// ---------- landing (recents / trending) ----------
+
+async function renderLanding() {
+    if (view === 'settings') closeSettings();
+    view = 'landing';
+    select(null);
+
+    const results = $('#results');
+    results.hidden = false;
+    results.innerHTML = '';
+    const mode = settings.landing === 'trending' ? 'trending' : 'recents';
+    results.append(el('div', { class: 'caption' },
+        mode === 'recents' ? 'Recent copies' : 'Trending on Giphy',
+        landingToggle(mode)));
+
+    if (mode === 'recents') {
+        const recents = await getRecents();
+        if (view !== 'landing') return;
+        if (!recents.length) {
+            results.append(hint('GIFs you copy will show up here.'));
+            return;
+        }
+        results.append(masonry(recents, {}, 3));
+    } else {
+        results.append(el('div', { class: 'loader' }));
+        try {
+            const gifs = await trendingGifs(apiKey, settings);
+            if (view !== 'landing') return;
+            results.querySelector('.loader')?.remove();
+            results.append(masonry(gifs.map(normalizeGif), {}, 3));
+        } catch (err) {
+            if (view === 'landing') renderError(err);
+        }
+    }
+}
+
+function landingToggle(mode) {
+    const seg = el('span', { class: 'seg' });
+    for (const [key, label] of [['recents', 'Recent'], ['trending', 'Trending']]) {
+        seg.append(el('button', {
+            type: 'button',
+            class: mode === key ? 'active' : '',
+            onclick: async () => {
+                settings = await saveSettings({ landing: key });
+                renderLanding();
+            },
+        }, label));
+    }
+    return seg;
 }
 
 // ---------- search ----------
@@ -126,6 +276,7 @@ async function doSearch() {
     }
     closeSettings();
     view = 'search';
+    select(null);
 
     const results = $('#results');
     results.innerHTML = '';
@@ -133,6 +284,8 @@ async function doSearch() {
 
     try {
         const gifs = await searchGifs(apiKey, term, settings);
+        // A newer keystroke may have superseded this response.
+        if (view !== 'search' || $('#searchInput').value.trim() !== term) return;
         renderResults(matchFavorites(term), gifs.map(normalizeGif));
     } catch (err) {
         renderError(err);
@@ -271,6 +424,7 @@ function makeTile(data, opts = {}) {
     if (!opts.tags) tile.addEventListener('mouseenter', () => adjustHoverOrigin(tile));
 
     if (opts.tags) tile.append(makeTagsRow(data));
+    tileData.set(tile, data);
     return tile;
 }
 
@@ -293,7 +447,10 @@ async function runAction(key, data, tile) {
     try {
         await action.run(data);
         flash(tile, action.done);
+        addRecent(data).catch(() => {});
         recordUse(data.id).then((u) => { usage = u; }).catch(() => {});
+        // Long enough to see the confirmation, short enough to feel instant.
+        if (settings.autoClose) setTimeout(() => window.close(), 650);
     } catch (err) {
         console.error(err);
         flash(tile, 'Copy failed', { error: true });
@@ -344,8 +501,9 @@ async function toggleFavorite(data, button, tile) {
 }
 
 function renderFavoritesView() {
-    view = 'favorites';
     closeSettings();
+    view = 'favorites';
+    select(null);
 
     const results = $('#results');
     results.hidden = false;
@@ -426,6 +584,7 @@ function applySettingsToForm() {
     $('#defaultActionSelect').value = settings.defaultAction;
     $('#limitSelect').value = String(settings.limit);
     $('#ratingSelect').value = settings.rating;
+    $('#autoCloseCheck').checked = settings.autoClose;
 }
 
 async function onDefaultsChange() {
@@ -433,6 +592,7 @@ async function onDefaultsChange() {
         defaultAction: $('#defaultActionSelect').value,
         limit: Number($('#limitSelect').value),
         rating: $('#ratingSelect').value,
+        autoClose: $('#autoCloseCheck').checked,
     });
 }
 

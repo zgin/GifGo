@@ -27,6 +27,11 @@ export async function searchGifs(apiKey, q, { limit = 30, rating = 'pg-13' } = {
     return body.data;
 }
 
+export async function trendingGifs(apiKey, { limit = 30, rating = 'pg-13' } = {}) {
+    const body = await request('trending', { limit, rating, api_key: apiKey });
+    return body.data;
+}
+
 export async function validateKey(apiKey) {
     await request('trending', { limit: 1, api_key: apiKey });
 }

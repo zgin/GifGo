@@ -8,6 +8,8 @@ const DEFAULT_SETTINGS = {
     defaultAction: 'linkSmall',
     limit: 30,
     rating: 'pg-13',
+    autoClose: true,
+    landing: 'recents',    // 'recents' | 'trending'
 };
 
 export async function getSettings() {
@@ -49,6 +51,23 @@ export async function saveFavorite(fav) {
 
 export async function removeFavorite(id) {
     await sync.remove(FAV_PREFIX + id);
+}
+
+// Recently copied gifs, newest first. Full records live in storage.local:
+// they carry image urls, which would blow sync's 8KB item quota, and recents
+// are a per-device convenience anyway (usage counts still sync).
+const RECENTS_KEY = 'recents';
+const RECENTS_MAX = 24;
+
+export async function getRecents() {
+    const { [RECENTS_KEY]: recents } = await chrome.storage.local.get(RECENTS_KEY);
+    return recents || [];
+}
+
+export async function addRecent(data) {
+    const recents = (await getRecents()).filter((r) => r.id !== data.id);
+    recents.unshift({ ...data, t: Date.now() });
+    await chrome.storage.local.set({ [RECENTS_KEY]: recents.slice(0, RECENTS_MAX) });
 }
 
 // Usage counts: one synced map of gif id -> {n: times copied, t: last copied}.
