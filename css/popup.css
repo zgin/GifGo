@@ -164,9 +164,18 @@ body {
 
 /* ---------- gif grid ---------- */
 
-.grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
+/* Fixed-width columns, dynamic tile heights (JS places tiles shortest-column-first) */
+.masonry {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+}
+
+.mcol {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
     gap: 10px;
 }
 
@@ -183,90 +192,118 @@ body {
 
 /* transform-origin is set per-tile in JS on hover so the scaled GIF always
    lands fully inside the visible area, clear of the top/bottom fade zones */
-.grid:not(.with-tags) .tile:hover {
+.masonry:not(.with-tags) .tile:hover {
     transform: translateY(var(--hover-shift, 0px)) scale(1.6);
     transition-delay: 0.07s;
     z-index: 5;
     box-shadow: 0 6px 24px rgba(0, 0, 0, 0.6);
 }
 
-/* Uniform blocks: every tile the same size, the GIF scaled to fit whole
-   (never cropped) and centered within its block. */
+/* Full-bleed: the GIF fills the tile width at its own aspect ratio */
 .imgwrap {
     position: relative;
     margin: 0;
-    aspect-ratio: 1;
     overflow: hidden;
 }
 
 .imgwrap img {
     width: 100%;
-    height: 100%;
-    object-fit: contain;
-    padding: 8px;
-    box-sizing: border-box;
+    height: auto;
     display: block;
 }
 
-.fav-badge {
+/* Small filled heart in the corner: the rest-state "saved" cue */
+.fav-mark {
     position: absolute;
-    top: 4px;
-    left: 4px;
-    background: rgba(211, 54, 130, 0.9);
-    color: #fff;
-    font-size: 9px;
-    font-weight: 700;
-    padding: 1px 6px;
-    border-radius: 99px;
+    top: 5px;
+    left: 5px;
+    line-height: 0;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.8));
+    pointer-events: none;
+}
+
+.fav-mark svg {
+    width: 12px;
+    height: 12px;
+    fill: var(--magenta);
+    stroke: var(--magenta);
 }
 
 /* hover action bar */
 
+/* Two-stage action bar. Stage 1 (tile hover): a slim, dim strip hugging the
+   bottom edge so the GIF stays fully readable. Stage 2 (cursor in the bottom
+   quarter): the bar grows upward from its anchored bottom edge and solidifies. */
 .actions {
     position: absolute;
     left: 0;
     right: 0;
     bottom: 0;
+    height: 25%;
     display: flex;
     justify-content: center;
-    gap: 4px;
-    padding: 14px 4px 5px;
-    background: linear-gradient(transparent, rgba(0, 43, 54, 0.65));
+    align-items: flex-end;
+    gap: 3px;
+    padding: 0 4px 3px;
+    background: linear-gradient(transparent, rgba(0, 43, 54, 0.5));
     opacity: 0;
     transition: opacity 0.1s ease 0.07s;
 }
 
 .tile:hover .actions {
-    opacity: 1;
+    opacity: 0.4;
 }
 
-/* Buttons sit ghosted over the GIF; the one under the cursor solidifies. */
+.actions:hover {
+    opacity: 1;
+    background: linear-gradient(transparent 25%, rgba(0, 43, 54, 0.85));
+}
+
 .actions button {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 1px;
-    width: 27px;
-    height: 22px;
+    width: 20px;
+    height: 13px;
     background: rgba(7, 54, 66, 0.9);
     border: 1px solid var(--base01);
-    border-radius: 5px;
+    border-radius: 4px;
     color: var(--base1);
     cursor: pointer;
     padding: 0;
-    opacity: 0.55;
-    transition: opacity 0.1s ease;
+    transition: width 0.1s ease, height 0.1s ease;
+}
+
+.actions:hover button {
+    width: 27px;
+    height: 22px;
+    border-radius: 5px;
 }
 
 .actions button:hover {
-    opacity: 1;
     color: var(--cyan);
     border-color: var(--cyan);
 }
 
+.actions .icon svg {
+    width: 8px;
+    height: 8px;
+    transition: width 0.1s ease, height 0.1s ease;
+}
+
+.actions:hover .icon svg {
+    width: 12px;
+    height: 12px;
+}
+
 .actions .sz {
-    font-size: 8px;
+    font-size: 6px;
     font-weight: 700;
+}
+
+.actions:hover .sz {
+    font-size: 8px;
 }
 
 .actions .heart:hover {
@@ -318,10 +355,6 @@ body {
 }
 
 /* ---------- favorites tags ---------- */
-
-.grid.with-tags {
-    grid-template-columns: repeat(2, 1fr);
-}
 
 .tags {
     display: flex;

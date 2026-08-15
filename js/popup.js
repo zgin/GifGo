@@ -52,6 +52,13 @@ function icon(name) {
     return span;
 }
 
+// Small filled heart in the tile corner: the rest-state "saved" cue.
+function favMark() {
+    const mark = el('span', { class: 'fav-mark', title: 'In your favorites' });
+    mark.innerHTML = ICONS.heart;
+    return mark;
+}
+
 function hint(text) {
     return el('p', { class: 'hint center' }, text);
 }
@@ -127,12 +134,15 @@ async function doSearch() {
 
 function normalizeGif(gif) {
     const images = gif.images || {};
+    const fw = images.fixed_width || images.downsized || images.original || {};
     return {
         id: gif.id,
         title: gif.title || '',
-        preview: (images.fixed_width || images.downsized || images.original)?.url,
-        small: (images.fixed_width || images.downsized || images.original)?.url,
+        preview: fw.url,
+        small: fw.url,
         big: (images.original || images.downsized_large || images.fixed_width)?.url,
+        w: Number(fw.width) || 0,
+        h: Number(fw.height) || 0,
     };
 }
 
@@ -150,16 +160,31 @@ function renderResults(favMatches, gifs) {
     const results = $('#results');
     results.innerHTML = '';
     const favIds = new Set(favMatches.map((f) => f.id));
-    const grid = el('div', { class: 'grid' });
+    const items = [...favMatches, ...gifs.filter((g) => !favIds.has(g.id))];
 
-    favMatches.forEach((fav) => grid.append(makeTile(fav, { badge: true })));
-    gifs.filter((g) => !favIds.has(g.id)).forEach((g) => grid.append(makeTile(g)));
-
-    if (!grid.children.length) {
+    if (!items.length) {
         results.append(hint('No GIFs found.'));
         return;
     }
-    results.append(grid);
+    results.append(masonry(items, {}, 3));
+}
+
+// Fixed-width columns, dynamic tile heights. Each tile goes to the currently
+// shortest column (heights tracked from the API's aspect ratios) so reading
+// order stays roughly left-to-right and favorites stay on top — Giphy-style.
+function masonry(items, opts, nCols) {
+    const wrap = el('div', { class: 'masonry' + (opts.tags ? ' with-tags' : '') });
+    const cols = Array.from({ length: nCols }, () => {
+        const node = el('div', { class: 'mcol' });
+        wrap.append(node);
+        return { node, h: 0 };
+    });
+    for (const item of items) {
+        const col = cols.reduce((best, c) => (c.h < best.h ? c : best));
+        col.node.append(makeTile(item, opts));
+        col.h += (item.w && item.h ? item.h / item.w : 1) + (opts.tags ? 0.22 : 0);
+    }
+    return wrap;
 }
 
 // ---------- tiles ----------
@@ -225,10 +250,9 @@ function makeTile(data, opts = {}) {
         },
     }, el('figure', { class: 'imgwrap' },
         el('img', { src: data.preview, alt: data.title || 'GIF', loading: 'lazy' }),
-        // Badge any favorited gif outside the favorites view, however it got
+        // Mark any favorited gif outside the favorites view, however it got
         // into the results (favorites-first match or regular API result).
-        (opts.badge || favorites[data.id]) && !opts.tags
-            ? el('span', { class: 'fav-badge' }, '♥ saved') : null,
+        favorites[data.id] && !opts.tags ? favMark() : null,
         opts.tags && uses(data.id) > 0
             ? el('span', { class: 'use-count', title: `Copied ${uses(data.id)} times` }, `${uses(data.id)}×`)
             : null,
@@ -276,7 +300,7 @@ async function toggleFavorite(data, button, tile) {
             await removeFavorite(data.id);
             delete favorites[data.id];
             button.classList.remove('faved');
-            tile.querySelector('.fav-badge')?.remove();
+            tile.querySelector('.fav-mark')?.remove();
             if (view === 'favorites') {
                 tile.remove();
                 updateFavoritesCaption();
@@ -290,6 +314,8 @@ async function toggleFavorite(data, button, tile) {
                 preview: data.preview,
                 small: data.small,
                 big: data.big,
+                w: data.w || 0,
+                h: data.h || 0,
                 tags: data.tags || [],
                 addedAt: Date.now(),
             };
@@ -297,8 +323,8 @@ async function toggleFavorite(data, button, tile) {
             favorites[fav.id] = fav;
             button.classList.add('faved');
             const wrap = tile.querySelector('.imgwrap');
-            if (!wrap.querySelector('.fav-badge')) {
-                wrap.querySelector('img').after(el('span', { class: 'fav-badge' }, '♥ saved'));
+            if (view !== 'favorites' && !wrap.querySelector('.fav-mark')) {
+                wrap.querySelector('img').after(favMark());
             }
             flash(tile, 'Saved ♥');
         }
@@ -323,9 +349,7 @@ function renderFavoritesView() {
         results.append(hint('No favorites yet — hover a GIF and click the ♥.'));
         return;
     }
-    const grid = el('div', { class: 'grid with-tags' });
-    favs.forEach((fav) => grid.append(makeTile(fav, { tags: true })));
-    results.append(grid);
+    results.append(masonry(favs, { tags: true }, 2));
 }
 
 function updateFavoritesCaption() {
