@@ -119,7 +119,7 @@ function wireEvents() {
     });
 
     // v1 nicety: nearing the right edge fattens the scrollbar thumb into the
-    // gutter (pure repaint — the scrollbar element itself never changes size).
+    // gutter (pure repaint; the scrollbar element never changes size).
     const content = $('#content');
     document.addEventListener('mousemove', (e) => {
         const edge = content.getBoundingClientRect().right;
@@ -288,7 +288,7 @@ async function doSearch() {
     const results = $('#results');
     results.innerHTML = '';
 
-    // Repeats of a search this session are free — spare the hourly quota.
+    // Repeats of a search this session are free, sparing the hourly quota.
     const cacheKey = `${term}|${settings.limit}|${settings.rating}`;
     const cached = searchCache.get(cacheKey);
     if (cached) {
@@ -350,7 +350,7 @@ function renderResults(favMatches, gifs) {
 
 // Fixed-width columns, dynamic tile heights. Each tile goes to the currently
 // shortest column (heights tracked from the API's aspect ratios) so reading
-// order stays roughly left-to-right and favorites stay on top — Giphy-style.
+// order stays roughly left-to-right and favorites stay on top, Giphy style.
 function masonry(items, opts, nCols) {
     const wrap = el('div', { class: 'masonry' + (opts.tags ? ' with-tags' : '') });
     const cols = Array.from({ length: nCols }, () => {
@@ -530,7 +530,7 @@ function renderFavoritesView() {
     const favs = Object.values(favorites).sort(byMostUsed);
     results.append(el('div', { class: 'caption', id: 'favCaption' }, `Favorites (${favs.length})`));
     if (!favs.length) {
-        results.append(hint('No favorites yet — hover a GIF and click the ♥.'));
+        results.append(hint('No favorites yet. Hover a GIF and click the ♥.'));
         return;
     }
     results.append(masonry(favs, { tags: true }, 2));
@@ -604,7 +604,7 @@ function applySettingsToForm() {
     $('#ratingSelect').value = settings.rating;
     $('#autoCloseCheck').checked = settings.autoClose;
     $('#liveSearchCheck').checked = settings.liveSearch;
-    $('#searchInput').placeholder = settings.liveSearch ? 'Search GIFs' : 'Search GIFs — press Enter';
+    $('#searchInput').placeholder = settings.liveSearch ? 'Search GIFs' : 'Search GIFs (press Enter)';
 }
 
 async function onDefaultsChange() {
@@ -649,7 +649,7 @@ function renderError(err) {
 
     let message = err.message;
     if (err.status === 401) {
-        message = 'Giphy returned 401 — the API key is bad or lacks access.';
+        message = 'Giphy returned 401: the API key is bad or lacks access.';
     }
     const note = el('div', { class: 'notification' }, el('p', {}, message));
     if (err.response) {

@@ -1,7 +1,7 @@
 # GifGo
 
-GifGo is a Chrome extension for searching Giphy and copying GIFs — as links or as actual
-images — straight to your clipboard. It's a fun and easy way to add some personality to
+GifGo is a Chrome extension for searching Giphy and copying GIFs, as links or as actual
+images, straight to your clipboard. It's a fun and easy way to add some personality to
 your online conversations!
 
 ## Features
@@ -9,13 +9,13 @@ your online conversations!
 - Search Giphy by keyword
 - Hover a GIF for copy actions: link (small), link (big), image (small), image (big)
 - Click anywhere on a GIF to run your default copy action (configurable in settings)
-- Image copy writes multiple clipboard formats at once — rich editors (Gmail, Slack,
+- Image copy writes multiple clipboard formats at once, so rich editors (Gmail, Slack,
   Discord) paste the animated GIF, plain editors get the URL, image apps get a still frame
 - Favorites: heart any GIF, tag your favorites, and matching favorites appear first in
   search results
 - Favorites and settings sync across your browsers via `chrome.storage.sync`
 - Configurable defaults: copy action, results per search, max rating
-- Zero dependencies — plain JavaScript and CSS
+- Zero dependencies, just plain JavaScript and CSS
 
 ## Installation
 

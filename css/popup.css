@@ -135,8 +135,8 @@ body {
     overflow-y: auto;
     overflow-x: hidden;
     /* right padding is small because the 14px scrollbar gutter provides the
-       rest — total right inset matches the other sides, so columns never
-       shift when the thumb fattens */
+       rest, so the total right inset matches the other
+       sides and columns never shift when the thumb fattens */
     padding: 10px 4px 16px 10px;
     -webkit-mask-image: linear-gradient(to bottom,
             transparent 0%, black 3%, black 95%, transparent 100%);
@@ -271,7 +271,7 @@ body {
 
 /* Two-stage action bar. Stage 1 (tile hover): a translucent frosted pill you
    can "sorta see" at the bottom edge. Stage 2 (cursor anywhere in the bottom
-   quarter): the pill turns opaque and the buttons grow — vertically only, at
+   quarter): the pill turns opaque and the buttons grow, vertically only, at
    fixed widths, so nothing slides sideways out from under the cursor. */
 .actions {
     position: absolute;
@@ -287,7 +287,7 @@ body {
     transition: opacity 0.1s ease 0.07s;
 }
 
-/* Pop up immediately on tile hover, hold a beat, then fade mostly away —
+/* Pop up immediately on tile hover, hold a beat, then fade mostly away
    unless the cursor comes into the bottom-quarter zone, which pins it opaque. */
 .tile:hover .actions {
     animation: bar-peek 1.4s ease forwards;
@@ -639,7 +639,7 @@ body {
 
 /* The scrollbar element is a constant 14px so layout never changes; the thumb
    is drawn slim inside it via a transparent border. Nearing the right edge
-   shrinks the border, fattening the thumb into the gutter — easier to grab. */
+   shrinks the border, fattening the thumb into the gutter, easier to grab. */
 #content::-webkit-scrollbar {
     width: 14px;
 }
