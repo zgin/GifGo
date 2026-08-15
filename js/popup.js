@@ -164,6 +164,43 @@ function renderResults(favMatches, gifs) {
 
 // ---------- tiles ----------
 
+// Must match the CSS hover scale and the #content fade-mask stops.
+const HOVER_SCALE = 1.6;
+const FADE_TOP = 0.03;
+const FADE_BOTTOM = 0.05;
+
+// Pick a transform-origin so the scaled tile stays fully visible inside the
+// scroller, clear of the top/bottom fade zones. A scaled box always contains
+// the original, so sliding the origin between 0% and 100% is always enough
+// when there is room; when there isn't, keeping the top visible wins.
+function adjustHoverOrigin(tile) {
+    const c = $('#content').getBoundingClientRect();
+    const r = tile.getBoundingClientRect();
+    const minTop = c.top + c.height * FADE_TOP;
+    const maxBottom = c.bottom - c.height * FADE_BOTTOM;
+
+    const extraY = r.height * (HOVER_SCALE - 1);
+    const fyMax = (r.top - minTop) / extraY;
+    const fyMin = 1 - (maxBottom - r.bottom) / extraY;
+    const fy = Math.max(0, Math.min(1, Math.min(Math.max(0.5, fyMin), fyMax)));
+
+    const extraX = r.width * (HOVER_SCALE - 1);
+    const fxMax = (r.left - (c.left + 4)) / extraX;
+    const fxMin = 1 - ((c.right - 4) - r.right) / extraX;
+    const fx = Math.max(0, Math.min(1, Math.min(Math.max(0.5, fxMin), fxMax)));
+
+    tile.style.transformOrigin = `${fx * 100}% ${fy * 100}%`;
+
+    // A tile already inside a fade zone can't be rescued by origin alone
+    // (the scaled box always contains the original): nudge it out instead.
+    const scaledTop = r.top - fy * extraY;
+    const scaledBottom = r.bottom + (1 - fy) * extraY;
+    let shift = 0;
+    if (scaledBottom > maxBottom) shift = maxBottom - scaledBottom;
+    if (scaledTop + shift < minTop) shift = minTop - scaledTop;
+    tile.style.setProperty('--hover-shift', `${Math.round(shift)}px`);
+}
+
 function makeTile(data, opts = {}) {
     const actionButtons = Object.entries(ACTIONS).map(([key, action]) =>
         el('button', {
@@ -188,13 +225,18 @@ function makeTile(data, opts = {}) {
         },
     }, el('figure', { class: 'imgwrap' },
         el('img', { src: data.preview, alt: data.title || 'GIF', loading: 'lazy' }),
-        opts.badge ? el('span', { class: 'fav-badge' }, '♥ saved') : null,
+        // Badge any favorited gif outside the favorites view, however it got
+        // into the results (favorites-first match or regular API result).
+        (opts.badge || favorites[data.id]) && !opts.tags
+            ? el('span', { class: 'fav-badge' }, '♥ saved') : null,
         opts.tags && uses(data.id) > 0
             ? el('span', { class: 'use-count', title: `Copied ${uses(data.id)} times` }, `${uses(data.id)}×`)
             : null,
         el('div', { class: 'actions' }, actionButtons, heartButton),
         el('div', { class: 'overlay' }),
     ));
+
+    if (!opts.tags) tile.addEventListener('mouseenter', () => adjustHoverOrigin(tile));
 
     if (opts.tags) tile.append(makeTagsRow(data));
     return tile;
@@ -234,6 +276,7 @@ async function toggleFavorite(data, button, tile) {
             await removeFavorite(data.id);
             delete favorites[data.id];
             button.classList.remove('faved');
+            tile.querySelector('.fav-badge')?.remove();
             if (view === 'favorites') {
                 tile.remove();
                 updateFavoritesCaption();
@@ -253,6 +296,10 @@ async function toggleFavorite(data, button, tile) {
             await saveFavorite(fav);
             favorites[fav.id] = fav;
             button.classList.add('faved');
+            const wrap = tile.querySelector('.imgwrap');
+            if (!wrap.querySelector('.fav-badge')) {
+                wrap.querySelector('img').after(el('span', { class: 'fav-badge' }, '♥ saved'));
+            }
             flash(tile, 'Saved ♥');
         }
     } catch (err) {

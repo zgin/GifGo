@@ -181,19 +181,13 @@ body {
     transition: transform 0.1s ease, box-shadow 0.1s ease;
 }
 
+/* transform-origin is set per-tile in JS on hover so the scaled GIF always
+   lands fully inside the visible area, clear of the top/bottom fade zones */
 .grid:not(.with-tags) .tile:hover {
-    transform: scale(1.6);
+    transform: translateY(var(--hover-shift, 0px)) scale(1.6);
     transition-delay: 0.07s;
     z-index: 5;
     box-shadow: 0 6px 24px rgba(0, 0, 0, 0.6);
-}
-
-.grid:not(.with-tags) .tile:nth-child(3n + 1) {
-    transform-origin: left center;
-}
-
-.grid:not(.with-tags) .tile:nth-child(3n) {
-    transform-origin: right center;
 }
 
 /* Uniform blocks: every tile the same size, the GIF scaled to fit whole
@@ -237,7 +231,7 @@ body {
     justify-content: center;
     gap: 4px;
     padding: 14px 4px 5px;
-    background: linear-gradient(transparent, rgba(0, 43, 54, 0.9));
+    background: linear-gradient(transparent, rgba(0, 43, 54, 0.65));
     opacity: 0;
     transition: opacity 0.1s ease 0.07s;
 }
@@ -246,6 +240,7 @@ body {
     opacity: 1;
 }
 
+/* Buttons sit ghosted over the GIF; the one under the cursor solidifies. */
 .actions button {
     display: inline-flex;
     align-items: center;
@@ -259,9 +254,12 @@ body {
     color: var(--base1);
     cursor: pointer;
     padding: 0;
+    opacity: 0.55;
+    transition: opacity 0.1s ease;
 }
 
 .actions button:hover {
+    opacity: 1;
     color: var(--cyan);
     border-color: var(--cyan);
 }
