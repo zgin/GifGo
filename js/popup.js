@@ -1,228 +1,394 @@
-let API_KEY = '';
+import { searchGifs, validateKey } from './api.js';
+import {
+    getSettings, saveSettings,
+    getApiKey, setApiKey, clearApiKey,
+    getFavorites, saveFavorite, removeFavorite,
+} from './storage.js';
+import { copyText, copyImage } from './clipboard.js';
 
-$(function() {
+const $ = (sel) => document.querySelector(sel);
 
-    const navbarHeight = $('.navbar').outerHeight();
-    const footerHeight = $('#footer').outerHeight();
-    console.log(footerHeight);
-    console.log(navbarHeight);
-    const padding = navbarHeight;
-    $('body').css('padding-top', padding + 'px');
-    $('#gifList').css('max-height', 600 - (navbarHeight + footerHeight) - 10 + 'px');
-    $('#gifListContainer').css('max-height', 600 - (navbarHeight + footerHeight) - 10 + 'px')
+let settings;
+let apiKey = null;
+let favorites = {};        // id -> favorite
+let view = 'search';       // 'search' | 'favorites' | 'settings'
 
-    $(document).mousemove(function(e) {
-        let ele = $('#gifList');
-        let distance = ele.offset().left + ele.outerWidth() - e.pageX;
-        distance < 15 && distance > -15 ? ele.addClass('more-width') : ele.removeClass('more-width');
-    });
+const ICONS = {
+    link: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>',
+    image: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>',
+    heart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>',
+};
 
+const ACTIONS = {
+    linkSmall:  { label: 'Copy link (small)',  done: 'Link (small) copied',  icon: 'link',  size: 'S', run: (d) => copyText(d.small) },
+    linkBig:    { label: 'Copy link (big)',    done: 'Link (big) copied',    icon: 'link',  size: 'L', run: (d) => copyText(d.big) },
+    imageSmall: { label: 'Copy image (small)', done: 'Image (small) copied', icon: 'image', size: 'S', run: (d) => copyImage(d.small) },
+    imageBig:   { label: 'Copy image (big)',   done: 'Image (big) copied',   icon: 'image', size: 'L', run: (d) => copyImage(d.big) },
+};
 
-    // Get user's Giphy API key from storage
-    chrome.storage.sync.get('giphyApiKey', function(data) {
-        if (data.giphyApiKey) {
-            API_KEY = data.giphyApiKey;
-        } else {
-            showApiKeyInput();
-        }
-    });
+// ---------- tiny DOM helpers ----------
 
-    $("#searchButton").click(searchGifs);
-    $('#settingsButton').click(function() {
-        let imgSrc = $(this).find('img').attr('src');
-        if (imgSrc === 'images/settings.png') {
-            showApiKeyInput();
-        } else if (imgSrc === 'images/close.png') {
-            $("#gifList").empty();
-        }
-        $(this).find('img').animate({width: 'toggle'}, 200, function() {
-            $(this).attr('src', imgSrc === 'images/settings.png' ? 'images/close.png' : 'images/settings.png').animate({width: 'toggle'}, 200);
-        });
-    });
-    $("#searchInput").keypress(function(event) {
-        if (event.which == 13) { // Enter key
-            searchGifs();
-        }
-    });
-    $('#clearSearchButton').click(function() {
-        $('#searchInput').val('');
-        $("#gifList").empty();
-    });
-    $('#clearSearchButton').hide(); // Hide the button by default
-
-    $('#searchInput').on('input', function() {
-        if ($(this).val().length > 0) {
-            $('#clearSearchButton').show(); // Show the button when there is content
-        } else {
-            $('#clearSearchButton').hide(); // Hide the button when there is no content
-        }
-    });
-
-    $('#clearSearchButton').click(function() {
-        $('#searchInput').val('');
-        $("#gifList").empty();
-        $('#clearSearchButton').hide(); // Hide the button after clearing the input
-    });
-
-    $("#searchInput").focus();
-    
-});
-
-function showApiKeyInput(clearGifList = true) {
-    if (clearGifList) { $("#gifList").empty(); }
-    let messageBox = $('<div>').addClass('message');
-    console.log('do api key stuff');
-    messageBox.load(chrome.runtime.getURL('templates/api_key_input.html'), function() {
-        let apiKeyInput = messageBox.find('.input');
-        chrome.storage.sync.get('giphyApiKey', function(data) {
-            if (data.giphyApiKey) {
-                apiKeyInput.val(data.giphyApiKey);
-            }
-        });
-        messageBox.find('.is-primary').click(function() {
-            event.preventDefault();
-            console.log("Saving API key...");
-            let apiKey = apiKeyInput.val();
-            if (apiKey) {
-                // Test the API key before saving it
-                $.get(`https://api.giphy.com/v1/gifs/trending?api_key=${apiKey}`, function(data) {
-                    chrome.storage.sync.set({ 'giphyApiKey': apiKey }, function() {
-                        API_KEY = apiKey;
-                        messageBox.remove();
-                    });
-                }).fail(function(jqXHR) {
-                    let errorThrown = jqXHR.responseJSON.meta.msg;
-                    let message = `Error searching for gifs: ${errorThrown}.`;
-                    console.log("Error searching for gifs: " + errorThrown);
-                    showErrorNotification(message, jqXHR.responseJSON);
-                });
-            }
-        });
-        messageBox.find('.is-danger').click(function() {
-            chrome.storage.sync.remove('giphyApiKey', function() {
-                API_KEY = null;
-                messageBox.remove();
-            });
-        });
-        messageBox.find('.delete').click(function() {
-            messageBox.remove();
-        });
-    });
-
-    $("#gifList").append(messageBox);
-}
-
-
-function searchGifs() {
-    let searchTerm = $("#searchInput").val();
-    let limit = $("#limitSelect").val();
-    let rating = $("#ratingSelect").val();
-
-    $("#gifList").empty();
-
-    let progressBar = $('<progress>').addClass('progress is-medium is-dark').attr('max', '100');
-    $("#gifList").empty().append(progressBar);
-
-    $.get(`https://api.giphy.com/v1/gifs/search?q=${searchTerm}&limit=${limit}&rating=${rating}&api_key=${API_KEY}`, function(data) {
-        populateGifList(data.data);
-    }).fail(function(jqXHR) {
-        $("#gifList").empty()
-        let errorThrown = jqXHR.responseJSON.meta.msg;
-        let message = `Error searching for gifs: ${errorThrown}.`;
-        let response = jqXHR.responseJSON;             
-        showErrorNotification(message, jqXHR.responseJSON, false);
-        if (response.meta.status === 401) {
-            showApiKeyInput(false);
-        }   
-    });
-}
-
-function showErrorNotification(message, response, clearGifList = false) {
-    if (clearGifList) { $("#gifList").empty(); }
-    let notification = $('<div>').addClass('notification is-danger');
-    let messageElement = $('<span>').text(message);
-    let detailsButton = $('<button>').addClass('button is-small is-light').text('Click To View Response Details').css('margin-top', '0.5rem');
-    let detailsBox = $('<div>').addClass('box').hide();
-    let detailsHeader = $('<div>').addClass('subtitle').text('Response Details:');
-    let detailsBody = $('<pre>').text(JSON.stringify(response, null, 2));
-    let deleteButton = $('<button>').addClass('delete');
-    let messageContainer = $('<div>').addClass('message-container').css('display', 'flex').css('flex-direction', 'column').append(messageElement).append(detailsButton);
-    notification.append(messageContainer).append(deleteButton).append(detailsBox);
-    detailsBox.append(detailsHeader).append(detailsBody);
-    detailsButton.click(function() {
-        detailsBox.slideToggle(function() {
-            window.scrollTo(0, document.body.scrollHeight);
-        });
-    });
-    deleteButton.click(function() {
-        notification.remove();
-    });
-    if (response.meta.status === 401) {
-        messageElement.text('Giphy responded with a 401 status indicating that the API Key is bad or that you have insufficient privileges. Please verify that your API key is correct.');
+function el(tag, attrs = {}, ...children) {
+    const node = document.createElement(tag);
+    for (const [key, value] of Object.entries(attrs)) {
+        if (key === 'class') node.className = value;
+        else if (key.startsWith('on')) node.addEventListener(key.slice(2), value);
+        else if (value !== false && value != null) node.setAttribute(key, value === true ? '' : value);
     }
-    $("#gifList").append(notification);
-    notification.scrollTop(notification[0].scrollHeight);
+    for (const child of children.flat()) {
+        if (child != null) node.append(child);
+    }
+    return node;
 }
 
-
-function populateGifList(gifs) {
-    $("#gifList").empty();
-
-    let columnClass = `is-half`;
-    let columns = $('<div>').addClass('columns is-mobile is-multiline');
-    columns.id = 'gifColumns';
-        $("#gifList").append(columns);
-
-    $.each(gifs, function(index, gif) {
-        let gifId = gif.id;
-        let gifColumn = $('<div>').addClass('column gif-column ' + columnClass).attr('data-gif-id', gifId);
-        let flexContainer = $('<div>').addClass('flex-container');
-        let img = $('<img>').attr('src', gif.images.fixed_width.url).addClass('gifImage ' + gifId).click(() => copyGifLink(gif));
-        let overlay = $('<div>').addClass('overlay overlay-' + gifId);
-        
-        flexContainer.append(img).append(overlay);
-        gifColumn.append(flexContainer);
-        
-        columns.append(gifColumn);
-    });
+function icon(name) {
+    const span = el('span', { class: 'icon' });
+    span.innerHTML = ICONS[name];
+    return span;
 }
 
-function copyGifLink(gif) {
-    let sizes = gif.images;
-    let gifUrl = null;
+function hint(text) {
+    return el('p', { class: 'hint center' }, text);
+}
 
-    let sortedSizes = Object.values(sizes).sort((a, b) => parseInt(b.size) - parseInt(a.size));
-    $.each(sortedSizes, function(index, size) {
-        if (size.size && parseInt(size.size) < 2000000) {
-            gifUrl = size.url;
-            return false;
-        }
+// ---------- init ----------
+
+async function init() {
+    [settings, apiKey, favorites] = await Promise.all([getSettings(), getApiKey(), getFavorites()]);
+    applySettingsToForm();
+    wireEvents();
+
+    if (!apiKey) {
+        openSettings('Add your Giphy API key to get started.');
+    } else if (Object.keys(favorites).length) {
+        renderFavoritesView();
+    } else {
+        $('#results').append(hint('Search for GIFs to get going.'));
+    }
+    $('#searchInput').focus();
+}
+
+function wireEvents() {
+    $('#searchButton').addEventListener('click', doSearch);
+    $('#searchInput').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') doSearch();
+    });
+    $('#searchInput').addEventListener('input', (e) => {
+        $('#clearSearchButton').hidden = e.target.value.length === 0;
+    });
+    $('#clearSearchButton').addEventListener('click', () => {
+        $('#searchInput').value = '';
+        $('#clearSearchButton').hidden = true;
+        $('#results').innerHTML = '';
+        $('#searchInput').focus();
     });
 
-    if (gifUrl) {
-        copyToClipboard(gifUrl);
-        showOverlayFeedback(gif);
+    $('#favoritesButton').addEventListener('click', renderFavoritesView);
+    $('#settingsButton').addEventListener('click', () => {
+        view === 'settings' ? closeSettings() : openSettings();
+    });
+
+    $('#saveKeyButton').addEventListener('click', onSaveKey);
+    $('#removeKeyButton').addEventListener('click', onRemoveKey);
+    for (const id of ['defaultActionSelect', 'limitSelect', 'ratingSelect']) {
+        $('#' + id).addEventListener('change', onDefaultsChange);
     }
 }
 
-function copyToClipboard(text) {
-    let $temp = $("<textarea>");
-    $("body").append($temp);
-    $temp.val(text).select();
-    document.execCommand("copy");
-    $temp.remove();
+// ---------- search ----------
+
+async function doSearch() {
+    const term = $('#searchInput').value.trim();
+    if (!term) return;
+    if (!apiKey) {
+        openSettings('Add your Giphy API key first.');
+        return;
+    }
+    closeSettings();
+    view = 'search';
+
+    const results = $('#results');
+    results.innerHTML = '';
+    results.append(el('div', { class: 'loader' }));
+
+    try {
+        const gifs = await searchGifs(apiKey, term, settings);
+        renderResults(matchFavorites(term), gifs.map(normalizeGif));
+    } catch (err) {
+        renderError(err);
+        if (err.status === 401) openSettings('Giphy rejected the API key. Double-check it below.');
+    }
 }
 
-function showOverlayFeedback(gif) {
-    let gifId = gif.id;
-    let overlay = $('.overlay-' + gifId);
+function normalizeGif(gif) {
+    const images = gif.images || {};
+    return {
+        id: gif.id,
+        title: gif.title || '',
+        preview: (images.fixed_width || images.downsized || images.original)?.url,
+        small: (images.fixed_width || images.downsized || images.original)?.url,
+        big: (images.original || images.downsized_large || images.fixed_width)?.url,
+    };
+}
 
-    overlay.text('Copied To Clipboard!').css('display', 'flex').animate({ opacity: 1 }, 300, function() {
-        setTimeout(() => {
-            overlay.animate({ opacity: 0 }, 700, function() {
-                overlay.css('display', 'none');
-            });
-        }, 1000);
+function matchFavorites(term) {
+    const words = term.toLowerCase().split(/\s+/);
+    return Object.values(favorites)
+        .filter((fav) => {
+            const haystack = (fav.tags.join(' ') + ' ' + fav.title).toLowerCase();
+            return words.every((word) => haystack.includes(word));
+        })
+        .sort((a, b) => b.addedAt - a.addedAt);
+}
+
+function renderResults(favMatches, gifs) {
+    const results = $('#results');
+    results.innerHTML = '';
+    const favIds = new Set(favMatches.map((f) => f.id));
+    const grid = el('div', { class: 'grid' });
+
+    favMatches.forEach((fav) => grid.append(makeTile(fav, { badge: true })));
+    gifs.filter((g) => !favIds.has(g.id)).forEach((g) => grid.append(makeTile(g)));
+
+    if (!grid.children.length) {
+        results.append(hint('No GIFs found.'));
+        return;
+    }
+    results.append(grid);
+}
+
+// ---------- tiles ----------
+
+function makeTile(data, opts = {}) {
+    const actionButtons = Object.entries(ACTIONS).map(([key, action]) =>
+        el('button', {
+            type: 'button',
+            title: action.label,
+            onclick: () => runAction(key, data, tile),
+        }, icon(action.icon), el('span', { class: 'sz' }, action.size)));
+
+    const heartButton = el('button', {
+        type: 'button',
+        class: 'heart' + (favorites[data.id] ? ' faved' : ''),
+        title: 'Favorite',
+        onclick: (e) => toggleFavorite(data, e.currentTarget, tile),
+    }, icon('heart'));
+
+    const tile = el('div', {
+        class: 'tile',
+        'data-id': data.id,
+        onclick: (e) => {
+            if (e.target.closest('button, input, .tags')) return;
+            runAction(settings.defaultAction, data, tile);
+        },
+    }, el('figure', { class: 'imgwrap' },
+        el('img', { src: data.preview, alt: data.title || 'GIF', loading: 'lazy' }),
+        opts.badge ? el('span', { class: 'fav-badge' }, '♥ saved') : null,
+        el('div', { class: 'actions' }, actionButtons, heartButton),
+        el('div', { class: 'overlay' }),
+    ));
+
+    if (opts.tags) tile.append(makeTagsRow(data));
+    return tile;
+}
+
+const flashTimers = new WeakMap();
+
+function flash(tile, text, { error = false, sticky = false } = {}) {
+    const overlay = tile.querySelector('.overlay');
+    overlay.textContent = text;
+    overlay.classList.toggle('error', error);
+    overlay.classList.add('show');
+    clearTimeout(flashTimers.get(tile));
+    if (!sticky) {
+        flashTimers.set(tile, setTimeout(() => overlay.classList.remove('show'), 1100));
+    }
+}
+
+async function runAction(key, data, tile) {
+    const action = ACTIONS[key] || ACTIONS.linkSmall;
+    flash(tile, 'Copying…', { sticky: true });
+    try {
+        await action.run(data);
+        flash(tile, action.done);
+    } catch (err) {
+        console.error(err);
+        flash(tile, 'Copy failed', { error: true });
+    }
+}
+
+// ---------- favorites ----------
+
+async function toggleFavorite(data, button, tile) {
+    try {
+        if (favorites[data.id]) {
+            await removeFavorite(data.id);
+            delete favorites[data.id];
+            button.classList.remove('faved');
+            if (view === 'favorites') {
+                tile.remove();
+                updateFavoritesCaption();
+            } else {
+                flash(tile, 'Removed from favorites');
+            }
+        } else {
+            const fav = {
+                id: data.id,
+                title: data.title || '',
+                preview: data.preview,
+                small: data.small,
+                big: data.big,
+                tags: data.tags || [],
+                addedAt: Date.now(),
+            };
+            await saveFavorite(fav);
+            favorites[fav.id] = fav;
+            button.classList.add('faved');
+            flash(tile, 'Saved ♥');
+        }
+    } catch (err) {
+        console.error(err);
+        const quota = /QUOTA|MAX_ITEMS/i.test(err.message || '');
+        flash(tile, quota ? 'Sync storage is full' : 'Could not save', { error: true });
+    }
+}
+
+function renderFavoritesView() {
+    view = 'favorites';
+    closeSettings();
+
+    const results = $('#results');
+    results.hidden = false;
+    results.innerHTML = '';
+
+    const favs = Object.values(favorites).sort((a, b) => b.addedAt - a.addedAt);
+    results.append(el('div', { class: 'caption', id: 'favCaption' }, `Favorites (${favs.length})`));
+    if (!favs.length) {
+        results.append(hint('No favorites yet — hover a GIF and click the ♥.'));
+        return;
+    }
+    const grid = el('div', { class: 'grid with-tags' });
+    favs.forEach((fav) => grid.append(makeTile(fav, { tags: true })));
+    results.append(grid);
+}
+
+function updateFavoritesCaption() {
+    const caption = $('#favCaption');
+    if (caption) caption.textContent = `Favorites (${Object.keys(favorites).length})`;
+}
+
+function makeTagsRow(fav) {
+    const row = el('div', { class: 'tags' });
+
+    const rebuild = () => {
+        row.innerHTML = '';
+        fav.tags.forEach((tag) => row.append(
+            el('span', { class: 'chip' }, tag,
+                el('button', {
+                    type: 'button',
+                    title: 'Remove tag',
+                    onclick: async () => {
+                        fav.tags = fav.tags.filter((t) => t !== tag);
+                        await saveFavorite(fav);
+                        rebuild();
+                    },
+                }, '✕'))));
+
+        const input = el('input', { class: 'tag-input', placeholder: '+ tag' });
+        input.addEventListener('keydown', async (e) => {
+            if (e.key !== 'Enter') return;
+            const tag = input.value.trim().toLowerCase();
+            if (tag && !fav.tags.includes(tag)) {
+                fav.tags.push(tag);
+                await saveFavorite(fav);
+                rebuild();
+                row.querySelector('.tag-input').focus();
+            } else {
+                input.value = '';
+            }
+        });
+        row.append(input);
+    };
+
+    rebuild();
+    return row;
+}
+
+// ---------- settings ----------
+
+function openSettings(message = '') {
+    view = 'settings';
+    $('#results').hidden = true;
+    $('#settingsPanel').hidden = false;
+    const note = $('#settingsNote');
+    note.textContent = message;
+    note.hidden = !message;
+    $('#apiKeyInput').value = apiKey || '';
+    $('#keyStatus').textContent = '';
+}
+
+function closeSettings() {
+    if (view !== 'settings') return;
+    $('#settingsPanel').hidden = true;
+    $('#results').hidden = false;
+    view = 'search';
+}
+
+function applySettingsToForm() {
+    $('#defaultActionSelect').value = settings.defaultAction;
+    $('#limitSelect').value = String(settings.limit);
+    $('#ratingSelect').value = settings.rating;
+}
+
+async function onDefaultsChange() {
+    settings = await saveSettings({
+        defaultAction: $('#defaultActionSelect').value,
+        limit: Number($('#limitSelect').value),
+        rating: $('#ratingSelect').value,
     });
 }
 
+async function onSaveKey() {
+    const key = $('#apiKeyInput').value.trim();
+    const status = $('#keyStatus');
+    if (!key) return;
+    status.textContent = 'Checking key…';
+    try {
+        await validateKey(key);
+        await setApiKey(key);
+        apiKey = key;
+        status.textContent = '✓ Key saved and working.';
+    } catch (err) {
+        status.textContent = err.status === 401 ? '✗ Giphy rejected this key.' : `✗ ${err.message}`;
+    }
+}
+
+async function onRemoveKey() {
+    await clearApiKey();
+    apiKey = null;
+    $('#apiKeyInput').value = '';
+    $('#keyStatus').textContent = 'Key removed.';
+}
+
+// ---------- errors ----------
+
+function renderError(err) {
+    const results = $('#results');
+    results.hidden = false;
+    results.innerHTML = '';
+
+    let message = err.message;
+    if (err.status === 401) {
+        message = 'Giphy returned 401 — the API key is bad or lacks access.';
+    }
+    const note = el('div', { class: 'notification' }, el('p', {}, message));
+    if (err.response) {
+        const pre = el('pre', { hidden: true }, JSON.stringify(err.response, null, 2));
+        note.append(
+            el('button', { type: 'button', class: 'btn small', onclick: () => { pre.hidden = !pre.hidden; } }, 'Details'),
+            pre);
+    }
+    results.append(note);
+}
+
+init();
