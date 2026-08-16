@@ -139,8 +139,14 @@ function select(tile) {
     if (selected) selected.classList.remove('selected');
     selected = tile || null;
     if (selected) {
-        selected.classList.add('selected');
+        // Scroll first, then compute the zoom origin from the settled
+        // position, then apply the class that triggers the scale (selection
+        // zooms like hover; the favorites view zooms in neither case).
         selected.scrollIntoView({ block: 'nearest' });
+        if (!selected.closest('.masonry')?.classList.contains('with-tags')) {
+            adjustHoverOrigin(selected);
+        }
+        selected.classList.add('selected');
     }
 }
 
@@ -152,16 +158,17 @@ function moveSelection(dir) {
         select(tiles[0]);
         return;
     }
-    const cur = selected.getBoundingClientRect();
-    const cx = cur.left + cur.width / 2;
-    const cy = cur.top + cur.height / 2;
+    // Offset geometry, not getBoundingClientRect: the selected tile is
+    // scaled 1.6x by the zoom, and offset values ignore transforms, so the
+    // zoom cannot skew the scoring. All tiles share an offset parent.
+    const cx = selected.offsetLeft + selected.offsetWidth / 2;
+    const cy = selected.offsetTop + selected.offsetHeight / 2;
     let best = null;
     let bestScore = Infinity;
     for (const tile of tiles) {
         if (tile === selected) continue;
-        const r = tile.getBoundingClientRect();
-        const dx = r.left + r.width / 2 - cx;
-        const dy = r.top + r.height / 2 - cy;
+        const dx = tile.offsetLeft + tile.offsetWidth / 2 - cx;
+        const dy = tile.offsetTop + tile.offsetHeight / 2 - cy;
         const forward = dir.x * dx + dir.y * dy;
         if (forward <= 1) continue;
         const score = forward + Math.abs(dir.x ? dy : dx) * 2.5;

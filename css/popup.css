@@ -179,7 +179,10 @@ body {
     color: var(--cyan);
 }
 
-/* keyboard selection ring */
+/* keyboard selection ring. In the zoomed views the cyan marker moves into
+   the shadow-ring slot instead (see the .selected override below the zoom
+   rule): one ring per tile, cyan for keyboard, neutral for hover. The flat
+   outline remains for the favorites view, where tiles do not zoom. */
 .tile.selected {
     outline: 2px solid var(--cyan);
     outline-offset: -2px;
@@ -229,12 +232,24 @@ body {
 }
 
 /* transform-origin is set per-tile in JS on hover so the scaled GIF always
-   lands fully inside the visible area, clear of the top/bottom fade zones */
-.masonry:not(.with-tags) .tile:hover {
+   lands fully inside the visible area, clear of the top/bottom fade zones.
+   Keyboard selection gets the same zoom treatment (origin set in select()).
+   The thin ring in the shadow stack is what separates the lifted tile from
+   its neighbors; a dark shadow alone disappears against the starfield. */
+.masonry:not(.with-tags) .tile:hover,
+.masonry:not(.with-tags) .tile.selected {
     transform: translateY(var(--hover-shift, 0px)) scale(1.6);
     transition-delay: 0.07s;
     z-index: 5;
-    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.6);
+    box-shadow: 0 0 0 1px rgba(147, 161, 161, 0.5), 0 10px 32px rgba(0, 0, 0, 0.75);
+}
+
+/* Zoomed keyboard selection: cyan takes over the ring slot and the flat
+   outline goes away, so the lifted tile carries exactly one ring. Must
+   follow the zoom rule; equal specificity, source order decides. */
+.masonry:not(.with-tags) .tile.selected {
+    outline: none;
+    box-shadow: 0 0 0 1px var(--cyan), 0 10px 32px rgba(0, 0, 0, 0.75);
 }
 
 /* Full-bleed: the GIF fills the tile width at its own aspect ratio */
@@ -288,8 +303,11 @@ body {
 }
 
 /* Pop up immediately on tile hover, hold a beat, then fade mostly away
-   unless the cursor comes into the bottom-quarter zone, which pins it opaque. */
-.tile:hover .actions {
+   unless the cursor comes into the bottom-quarter zone, which pins it opaque.
+   Keyboard selection peeks the bar the same way: it is the legend for the
+   1-4/F/Enter keys, so it must show up without a cursor. */
+.tile:hover .actions,
+.tile.selected .actions {
     animation: bar-peek 1.4s ease forwards;
 }
 
@@ -671,5 +689,5 @@ body {
 @media (prefers-reduced-motion: reduce) {
     .tile, .actions, .overlay, .icon-btn { transition: none !important; }
     .loader { animation: none; }
-    .tile:hover .actions { animation: none; opacity: 0.85; }
+    .tile:hover .actions, .tile.selected .actions { animation: none; opacity: 0.85; }
 }
