@@ -5,15 +5,15 @@ core loop: urge → find → paste.
 
 ## Now: Chrome Web Store v2 release
 
-- Update the store listing: new screenshots (masonry grid, hover bar,
-  favorites with tags), rewritten description matching the README.
-- Privacy disclosures: declare storage use (favorites, settings, usage
-  counts, recents) and justify host permissions (api.giphy.com, *.giphy.com
-  for image copy fetches).
-- Pack script: build the store zip from an explicit file list (manifest,
-  popup files, js/, css/, images/) so `server/` and other non-extension
-  directories never ship in the package.
-- Verify the packed zip loads clean, then submit for review.
+Screenshots, listing copy, privacy policy and the pack script are done. What
+is left needs a browser and a developer account:
+
+- Merge `feature/v2-overhaul` to `main` and push, so the PRIVACY.md link
+  used by both store listings resolves.
+- Load `dist/gifgo-2.0.zip` unpacked in real Chrome and check the parts the
+  harness cannot: clipboard copies (link and image), the Alt+Shift+G
+  shortcut, and favorites syncing across profiles.
+- Submit to the Chrome Web Store, then to Edge Add-ons.
 - Tag the release commit once approved.
 
 ## Next: GifGo server (Klipy proxy) and web app
