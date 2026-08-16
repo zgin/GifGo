@@ -8,8 +8,6 @@ core loop: urge → find → paste.
 Screenshots, listing copy, privacy policy and the pack script are done. What
 is left needs a browser and a developer account:
 
-- Merge `feature/v2-overhaul` to `main` and push, so the PRIVACY.md link
-  used by both store listings resolves.
 - Load `dist/gifgo-2.0.zip` unpacked in real Chrome and check the parts the
   harness cannot: clipboard copies (link and image), the Alt+Shift+G
   shortcut, and favorites syncing across profiles.
