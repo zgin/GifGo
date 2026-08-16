@@ -9,8 +9,10 @@ your online conversations!
 - Search Giphy by keyword
 - Hover a GIF for copy actions: link (small), link (big), image (small), image (big)
 - Click anywhere on a GIF to run your default copy action (configurable in settings)
-- Image copy writes multiple clipboard formats at once, so rich editors (Gmail, Slack,
-  Discord) paste the animated GIF, plain editors get the URL, image apps get a still frame
+- Image copy writes multiple clipboard formats at once: rich editors that honor pasted
+  HTML (Teams, Gmail, Slack) fetch and embed the animated GIF, plain editors get the URL,
+  image apps get a still frame. Tip: for apps that only accept image uploads on paste
+  (Discord), copy the link instead; they unfurl it into the animated GIF
 - Favorites: heart any GIF, tag your favorites, and matching favorites appear first in
   search results
 - Favorites and settings sync across your browsers via `chrome.storage.sync`
@@ -35,7 +37,8 @@ GifGo uses your own Giphy API key:
 
 ## Usage
 
-Click the GifGo icon, type a search, and hit Enter. Hover any GIF for the copy buttons and
+Click the GifGo icon (or press Alt+G; rebindable at `chrome://extensions/shortcuts`),
+type a search, and hit Enter. Hover any GIF for the copy buttons and
 the ♥ favorite button, or just click the GIF to copy with your default action. The heart
 button in the top bar shows your favorites, where you can tag them.
 

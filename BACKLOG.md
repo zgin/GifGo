@@ -3,7 +3,17 @@
 Feature ideas not in the current release. Ordered by how much each shortens the
 core loop: urge → find → paste.
 
-## GifGo server: Klipy-backed proxy (removes the BYO-API-key requirement)
+## Now: Chrome Web Store v2 release
+
+- Update the store listing: new screenshots (masonry grid, hover bar,
+  favorites with tags), rewritten description matching the README.
+- Privacy disclosures: declare storage use (favorites, settings, usage
+  counts, recents) and justify host permissions (api.giphy.com, *.giphy.com
+  for image copy fetches).
+- Verify the packed zip loads clean, then submit for review.
+- Tag the release commit once approved.
+
+## Next: GifGo server (Klipy proxy) and web app
 
 Klipy (klipy.com/developers, docs.klipy.com) is free: test keys are limited to
 100 req/hour like Giphy dev keys, but **production keys are unlimited** (their
@@ -11,7 +21,7 @@ model monetizes with optional ad content, not API fees). Plan:
 
 - Small proxy service (host it ourselves): `GET /search?q=`, `GET /trending`.
   The Klipy production key lives only on the server; the extension ships with
-  no key requirement at all. Same backend later powers a web app.
+  no key requirement at all.
 - **Server-side response cache** is the workhorse: popular search terms and
   trending are served from cache (60s–1h TTL), so even live typing across all
   users costs few upstream calls.
@@ -30,47 +40,56 @@ model monetizes with optional ad content, not API fees). Plan:
   docs are readable.
 - Once the server exists, flip `liveSearch` default to on when the provider
   is the GifGo server.
+- **Web app on the same backend**: the popup UI already runs in a plain
+  browser page, so serve it as a site with a web manifest. Installed as a
+  PWA it pins to the taskbar and runs in its own window; this is the
+  taskbar story for locked-down corporate machines that block installing
+  unsigned executables.
 
-## Tier 1: loop shorteners
-- **Trending on open**: populate the popup from Giphy's trending endpoint
-  (same API key) instead of opening empty.
-- **Search-as-you-type**: debounced (~300ms) live search, no Enter required.
-- **Keyboard-first flow**: arrows move a selection ring through the grid,
-  Enter runs the default copy, F favorites, 1–4 run the specific copy actions.
-- **Auto-close on copy** (setting): close the popup after a successful copy so
-  the paste is the very next action.
+## Then: Windows tray app (the flagship)
+
+A small native host for the same UI: tray icon, global hotkey, popup window
+near the tray. The reason it earns flagship status is the clipboard: a native
+app can put the actual .gif on the clipboard as a file, alongside the HTML,
+PNG, and URL flavors. Paste targets that only accept file/image data on paste
+(Discord, and any plain upload box) then receive the animated GIF itself,
+which no browser-based tool can offer.
+
+- Leanest Windows-only host: a small C# app embedding WebView2 (ships with
+  Windows 11). No npm, no bundler; the popup HTML/CSS/JS ports nearly
+  verbatim with a thin shim replacing `chrome.storage` and the clipboard
+  calls. Tauri is the fallback if Mac support is ever wanted.
+- Native clipboard writes CF_HDROP (temp .gif file) + CF_HTML + PNG + text.
+- Distribution caveat: unsigned executables trip SmartScreen; the PWA above
+  stays as the frictionless channel.
 
 ## Tier 2: library compounding
-- **Recents view**: surface recently-copied GIFs from the existing usage data
-  ("the one I used yesterday" retrieval).
+
 - **Frecency sorting**: weight use counts by recency instead of raw totals.
 - **Tag autocomplete**: suggest existing tags while typing to keep the tag
   vocabulary consistent; clickable tag chips filter the favorites view.
 - **Export / import favorites**: JSON backup; sync is not a backup.
 
 ## Tier 3: reach beyond the popup
+
 - **Omnibox keyword**: `gif <search>` in the address bar, Enter copies.
 - **Context menu**: right-click any image on any page → "Save to GifGo
   favorites".
 - **Drag-to-chat**: drag a tile straight into a compose box.
 - **GIPHY stickers**: transparent-background stickers endpoint, same key.
 
-## Release: Chrome Web Store v2
-- Update the store listing: new screenshots (masonry grid, hover bar,
-  favorites with tags), rewritten description matching the README.
-- Privacy disclosures: declare storage use (favorites, settings, usage
-  counts, recents) and justify host permissions (api.giphy.com, *.giphy.com
-  for image copy fetches).
-- Verify the packed zip loads clean, then submit for review.
-- Tag the release commit once approved.
-
 ## Smaller ideas
+
 - Pagination / infinite scroll (`offset` param).
 - Random / "surprise me" button (Giphy random endpoint).
 - Full options page (`options_ui`) if the settings surface keeps growing.
 - Local cache of recent searches to soften API rate limits.
 
 ## Dead ends
+
 - **Tenor as a second provider**: Google shut down the public Tenor API
   (confirmed 2026). If a second source is ever wanted, candidates would need
   re-evaluation at the time.
+- **Mobile (iOS/Android)**: the GIF flow on mobile belongs to the OS
+  keyboard; competing there means building custom keyboards against Gboard.
+  Not worth it for this project.
