@@ -53,15 +53,15 @@ contains no remote code.
 
 ## Your clipboard
 
-GifGo writes to your clipboard when you copy a GIF. It never reads your
-clipboard.
+GifGo writes to your clipboard when you copy a GIF, and only in response to
+you clicking or pressing a key. It never reads your clipboard, and it holds
+no clipboard permission: the write happens through the browser's standard
+Clipboard API on the strength of that click or keypress alone.
 
 ## Permissions, and why each one is needed
 
 - `storage`: to save the settings, favorites, usage counts, and recents
   described above.
-- `clipboardWrite`: to copy a GIF link or image, which is the entire point of
-  the extension.
 - `https://api.giphy.com/*`: to run searches and load trending GIFs.
 - `https://*.giphy.com/*`: to load GIF images and fetch the image data used
   when you copy a GIF as an image.
