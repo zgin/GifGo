@@ -37,7 +37,7 @@ GifGo uses your own Giphy API key:
 
 ## Usage
 
-Click the GifGo icon (or press Alt+G; rebindable at `chrome://extensions/shortcuts`),
+Click the GifGo icon (or press Alt+Shift+G; rebindable at `chrome://extensions/shortcuts`),
 type a search, and hit Enter. Hover any GIF for the copy buttons and
 the ♥ favorite button, or just click the GIF to copy with your default action. The heart
 button in the top bar shows your favorites, where you can tag them.
