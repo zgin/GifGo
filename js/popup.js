@@ -395,10 +395,16 @@ const FADE_BOTTOM = 0.05;
 // the original, so sliding the origin between 0% and 100% is always enough
 // when there is room; when there isn't, keeping the top visible wins.
 function adjustHoverOrigin(tile) {
-    const c = $('#content').getBoundingClientRect();
+    const content = $('#content');
+    const c = content.getBoundingClientRect();
     const r = tile.getBoundingClientRect();
     const minTop = c.top + c.height * FADE_TOP;
     const maxBottom = c.bottom - c.height * FADE_BOTTOM;
+    // The scrollbar gutter sits inside the border box but outside the visible
+    // area, so the right edge to aim for comes from clientWidth. Using the
+    // bounding rect instead lets the scaled tile slide under the scrollbar,
+    // where overflow-x clips it and eats the ring on that side.
+    const visibleRight = c.left + content.clientWidth;
 
     const extraY = r.height * (HOVER_SCALE - 1);
     const fyMax = (r.top - minTop) / extraY;
@@ -407,7 +413,7 @@ function adjustHoverOrigin(tile) {
 
     const extraX = r.width * (HOVER_SCALE - 1);
     const fxMax = (r.left - (c.left + 4)) / extraX;
-    const fxMin = 1 - ((c.right - 4) - r.right) / extraX;
+    const fxMin = 1 - ((visibleRight - 4) - r.right) / extraX;
     const fx = Math.max(0, Math.min(1, Math.min(Math.max(0.5, fxMin), fxMax)));
 
     tile.style.transformOrigin = `${fx * 100}% ${fy * 100}%`;
