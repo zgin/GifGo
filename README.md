@@ -10,7 +10,7 @@ your online conversations!
 - Hover a GIF for copy actions: link (small), link (big), image (small), image (big)
 - Click anywhere on a GIF to run your default copy action (configurable in settings)
 - Image copy writes multiple clipboard formats at once: rich editors that honor pasted
-  HTML (Teams, Gmail, Slack) fetch and embed the animated GIF, plain editors get the URL,
+  HTML (Teams, Slack) fetch and embed the animated GIF, plain editors get the URL,
   image apps get a still frame. Tip: for apps that only accept image uploads on paste
   (Discord), copy the link instead; they unfurl it into the animated GIF
 - Favorites: heart any GIF, tag your favorites, and matching favorites appear first in
@@ -41,6 +41,10 @@ Click the GifGo icon (or press Alt+Shift+G; rebindable at `chrome://extensions/s
 type a search, and hit Enter. Hover any GIF for the copy buttons and
 the ♥ favorite button, or just click the GIF to copy with your default action. The heart
 button in the top bar shows your favorites, where you can tag them.
+
+Prefer the keyboard? Arrow keys move through the grid, Enter copies with your default
+action, 1 through 4 run the four copy actions, F favorites, and Escape returns to the
+search box.
 
 ## Contributing
 
