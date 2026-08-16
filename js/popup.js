@@ -121,9 +121,19 @@ function wireEvents() {
     // v1 nicety: nearing the right edge fattens the scrollbar thumb into the
     // gutter (pure repaint; the scrollbar element never changes size).
     const content = $('#content');
+    let pointer = null;
     document.addEventListener('mousemove', (e) => {
         const edge = content.getBoundingClientRect().right;
         content.classList.toggle('wide-scroll', e.clientX > edge - 20 && e.clientX <= edge);
+
+        // Reaching for the mouse hands the grid back to it: drop the keyboard
+        // selection so a selected tile and a hovered one cannot sit zoomed at
+        // once. This has to hang off mousemove, which only fires when the
+        // pointer actually travels; mouseenter also fires when tiles scroll
+        // under a still cursor, and select() scrolls on every arrow press.
+        const moved = pointer && (e.clientX !== pointer.x || e.clientY !== pointer.y);
+        pointer = { x: e.clientX, y: e.clientY };
+        if (moved && selected) select(null);
     });
 
     $('#saveKeyButton').addEventListener('click', onSaveKey);

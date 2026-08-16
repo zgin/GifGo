@@ -236,18 +236,16 @@ body {
    Keyboard selection gets the same zoom treatment (origin set in select()).
    The thin ring in the shadow stack is what separates the lifted tile from
    its neighbors; a dark shadow alone disappears against the starfield. */
+/* Mouse and keyboard share this state: a real pointer move drops the
+   keyboard selection, so only ever one tile is lifted at a time. The cyan
+   ring is what reads as an edge against the starfield; the drop shadow
+   alone disappears into it whenever the GIFs sit still. outline:none drops
+   the flat selection ring below, leaving the lifted tile exactly one. */
 .masonry:not(.with-tags) .tile:hover,
 .masonry:not(.with-tags) .tile.selected {
     transform: translateY(var(--hover-shift, 0px)) scale(1.6);
     transition-delay: 0.07s;
     z-index: 5;
-    box-shadow: 0 0 0 1px rgba(147, 161, 161, 0.5), 0 10px 32px rgba(0, 0, 0, 0.75);
-}
-
-/* Zoomed keyboard selection: cyan takes over the ring slot and the flat
-   outline goes away, so the lifted tile carries exactly one ring. Must
-   follow the zoom rule; equal specificity, source order decides. */
-.masonry:not(.with-tags) .tile.selected {
     outline: none;
     box-shadow: 0 0 0 1px var(--cyan), 0 10px 32px rgba(0, 0, 0, 0.75);
 }
