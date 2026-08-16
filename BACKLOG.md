@@ -10,6 +10,9 @@ core loop: urge → find → paste.
 - Privacy disclosures: declare storage use (favorites, settings, usage
   counts, recents) and justify host permissions (api.giphy.com, *.giphy.com
   for image copy fetches).
+- Pack script: build the store zip from an explicit file list (manifest,
+  popup files, js/, css/, images/) so `server/` and other non-extension
+  directories never ship in the package.
 - Verify the packed zip loads clean, then submit for review.
 - Tag the release commit once approved.
 
@@ -19,9 +22,14 @@ Klipy (klipy.com/developers, docs.klipy.com) is free: test keys are limited to
 100 req/hour like Giphy dev keys, but **production keys are unlimited** (their
 model monetizes with optional ad content, not API fees). Plan:
 
+- Lives in this repo under `server/`: the worker script, `wrangler.toml`,
+  and the web app assets it serves. The web app reuses the root `js/` and
+  `css/` files rather than copying them; one repo, no mirror drift. Split
+  into its own repo only if the server ever needs to be private or grows
+  its own release cadence.
 - Small proxy service (host it ourselves): `GET /search?q=`, `GET /trending`.
-  The Klipy production key lives only on the server; the extension ships with
-  no key requirement at all.
+  The Klipy production key lives only on the server (a Wrangler secret,
+  never in the repo); the extension ships with no key requirement at all.
 - **Server-side response cache** is the workhorse: popular search terms and
   trending are served from cache (60s–1h TTL), so even live typing across all
   users costs few upstream calls.
