@@ -4,8 +4,10 @@ export async function copyText(text) {
 
 // Chrome's clipboard cannot hold an animated GIF as an image (image/png only), so we
 // write multiple formats at once and let the paste target pick the richest one it
-// supports: rich-text editors (Gmail, Slack, Discord) take the HTML and paste the
-// animated GIF, image consumers take the PNG still frame, plain editors take the URL.
+// supports: editors that honour pasted HTML take that and fetch the animated GIF
+// (Teams and Slack do, Gmail does not), image consumers take the PNG still frame,
+// and plain editors take the URL. Discord ignores the HTML and uploads the PNG as a
+// static attachment, so copying the link is the answer there.
 export async function copyImage(url) {
     const html = new Blob([`<img src="${url}" alt="GIF">`], { type: 'text/html' });
     const text = new Blob([url], { type: 'text/plain' });
