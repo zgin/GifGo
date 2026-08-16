@@ -6,7 +6,7 @@
       "128": "images/gifgo_logo_128.png"
     },
     "description": "Search Giphy, copy GIF links or images, and save favorites",
-    "permissions": ["storage", "clipboardWrite"],
+    "permissions": ["storage"],
     "host_permissions": [
       "https://api.giphy.com/*",
       "https://*.giphy.com/*"
