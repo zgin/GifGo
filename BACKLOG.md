@@ -36,10 +36,6 @@ So the extension talks to Klipy directly:
   escape hatch, and the failover if the shared key is ever revoked.
 - **Attribution is required**: "Search KLIPY" as the search placeholder
   whenever Klipy is the provider. The Giphy logo link stays for Giphy.
-- **Namespace the favorite and usage keys by provider** before a second
-  source ships. `fav_<gifId>` is provider-blind today, so ids from two
-  sources can collide, and a saved record can point at URLs the other
-  provider cannot refresh. Cheap now, a migration later.
 - Request production access through the Partner Panel form once the
   integration is tested; the test key's 100/hour is the same ceiling that
   keeps `liveSearch` off today. Flip the `liveSearch` default to on for the

@@ -328,11 +328,16 @@ async function doSearch() {
 
 const searchCache = new Map();
 
+// Hardcoded until the Klipy adapter lands the real provider setting; keeps
+// ids namespaced ("giphy:<id>") from here on so favorites and usage never
+// collide with a second source.
+const PROVIDER = 'giphy';
+
 function normalizeGif(gif) {
     const images = gif.images || {};
     const fw = images.fixed_width || images.downsized || images.original || {};
     return {
-        id: gif.id,
+        id: `${PROVIDER}:${gif.id}`,
         title: gif.title || '',
         preview: fw.url,
         small: fw.url,
