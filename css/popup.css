@@ -1,4 +1,12 @@
 :root {
+    /* Solarized dark is the only theme there is, so say so. Browsers then
+       render native bits (form control popups, default scrollbars) dark
+       instead of light, and re-theming extensions like Dark Reader can tell
+       the page is already dark and leave it alone rather than recoloring it
+       (Dark Reader was repainting the top bar's black bottom border a washed
+       out teal, which read as a grey band under the search box). */
+    color-scheme: dark;
+
     --base03: #002b36;
     --base02: #073642;
     --base01: #586e75;
