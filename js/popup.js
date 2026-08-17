@@ -426,6 +426,11 @@ function renderResults(favMatches, gifs) {
 const GRID_GAP = 10;              // matches .masonry / .mcol gap in popup.css
 const MIN_COL = 165;             // ~the column width three-up at 550px
 const MIN_COL_TAGS = 250;        // favorites tiles carry a tag row, so wider
+// Ceiling on top of the minimum width: every visible tile is an animated GIF
+// decoding continuously, so a really wide window turns into a wall of them
+// and the grid gets sluggish. Past five columns the masonry stops growing and
+// centers instead, capped by max-width in popup.css.
+const MAX_COLS = 5;
 
 function columnsFor(minCol, floor) {
     const content = $('#content');
@@ -435,7 +440,7 @@ function columnsFor(minCol, floor) {
     // n columns need n*minCol plus (n-1) gaps, so solve with one gap added
     // to both sides rather than special-casing the last column.
     const fits = Math.floor((avail + GRID_GAP) / (minCol + GRID_GAP));
-    return Math.max(floor, fits || floor);
+    return Math.min(MAX_COLS, Math.max(floor, fits || floor));
 }
 
 function masonry(items, opts, nCols) {

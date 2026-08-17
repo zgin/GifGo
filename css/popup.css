@@ -235,10 +235,23 @@ body {
 /* ---------- gif grid ---------- */
 
 /* Fixed-width columns, dynamic tile heights (JS places tiles shortest-column-first) */
+/* Five columns is the ceiling (MAX_COLS in popup.js): past that, too many
+   animated GIFs are decoding at once and the grid drags. These caps are what
+   stops the five from just getting wider forever in a big window: 1040 is
+   five 200px columns plus four 10px gaps, and the auto margins center the
+   block once the window is wider than that. Below the cap the columns still
+   stretch, so nothing changes at popup size. */
 .masonry {
     display: flex;
     gap: 10px;
     align-items: flex-start;
+    max-width: 1040px;
+    margin-inline: auto;
+}
+
+/* Favorites carry a tag row, so their columns are wider to begin with. */
+.masonry.with-tags {
+    max-width: 1540px;
 }
 
 .mcol {
