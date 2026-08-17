@@ -655,12 +655,6 @@ body {
     height: 26px;
 }
 
-.klipy-attribution {
-    color: var(--blue);
-    font-size: 12px;
-    align-self: center;
-}
-
 /* ---------- scrollbar ---------- */
 
 /* The scrollbar element is a constant 14px so layout never changes; the thumb

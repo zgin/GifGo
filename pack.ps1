@@ -23,6 +23,7 @@ $Files = @(
     'js/remoteConfig.js',
     'images/gifgo_logo_128.png',
     'images/giphy_attribution.gif',
+    'images/klipy_attribution.png',
     'images/starfield.gif'
 )
 

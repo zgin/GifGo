@@ -20,6 +20,14 @@
             align-items: center;
             justify-content: center;
             background: var(--base03);
+            /* #gifgo-app is a fixed 550x600 box. If the window's actual
+               viewport ever ends up shorter than that (a PWA's title bar
+               eats into it in a way the extension popup never has to deal
+               with), overflow here would otherwise draw the browser's
+               default, unstyled scrollbar around the whole page, visibly
+               different from #content's custom one. Clip instead: the
+               resize script below is what actually prevents the mismatch. */
+            overflow: hidden;
         }
         #gifgo-app {
             width: 550px;
@@ -125,11 +133,25 @@
             <a id="giphyAttribution" href="https://giphy.com/" target="_blank">
                 <img src="images/giphy_attribution.gif" alt="Powered by GIPHY">
             </a>
-            <a id="klipyAttribution" class="klipy-attribution" href="https://klipy.com/" target="_blank" hidden>Powered by KLIPY</a>
+            <a id="klipyAttribution" href="https://klipy.com/" target="_blank" hidden>
+                <img src="images/klipy_attribution.png" alt="Powered by KLIPY">
+            </a>
         </footer>
     </div>
 
     <script>
+        // Only in the installed PWA (never a regular tab, where resizeTo is
+        // blocked anyway): size the window so its content viewport is
+        // exactly 550x600, the fixed size the whole UI assumes. resizeTo
+        // sets the outer window size including its title bar, so measure
+        // that overhead (outerHeight - innerHeight, same idea for width)
+        // and add it in, rather than sizing the window itself to 550x600
+        // and leaving the actual content area short.
+        if (window.matchMedia('(display-mode: standalone)').matches) {
+            const chromeWidth = window.outerWidth - window.innerWidth;
+            const chromeHeight = window.outerHeight - window.innerHeight;
+            window.resizeTo(550 + chromeWidth, 600 + chromeHeight);
+        }
         if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
     </script>
 </body>
