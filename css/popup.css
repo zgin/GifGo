@@ -243,7 +243,7 @@ body {
    the flat selection ring below, leaving the lifted tile exactly one. */
 .masonry:not(.with-tags) .tile:hover,
 .masonry:not(.with-tags) .tile.selected {
-    transform: translateY(var(--hover-shift, 0px)) scale(1.6);
+    transform: translateY(var(--hover-shift, 0px)) scale(var(--hover-scale, 1.6));
     transition-delay: 0.07s;
     z-index: 5;
     outline: none;

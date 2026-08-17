@@ -149,6 +149,15 @@ function wireEvents() {
         if (moved && selected) select(null);
     });
 
+    // Re-lay the grid when the window resizes, since the column count comes
+    // from the available width. Only the web app can resize; the extension
+    // popup is a fixed 550x600, so this never fires there.
+    let reflowTimer;
+    window.addEventListener('resize', () => {
+        clearTimeout(reflowTimer);
+        reflowTimer = setTimeout(reflow, 150);
+    });
+
     $('#saveKeyButton').addEventListener('click', onSaveKey);
     $('#removeKeyButton').addEventListener('click', onRemoveKey);
     $('#providerSelect').addEventListener('change', onProviderChange);
@@ -269,7 +278,7 @@ async function renderLanding() {
             results.append(hint('GIFs you copy will show up here.'));
             return;
         }
-        results.append(masonry(recents, {}, 3));
+        results.append(masonry(recents, {}, columnsFor(MIN_COL, 3)));
     } else {
         const cacheKey = `${settings.provider}|trending|${settings.limit}|${settings.rating}`;
         let gifs = searchCache.get(cacheKey);
@@ -286,7 +295,7 @@ async function renderLanding() {
             if (view !== 'landing') return;
             results.querySelector('.loader')?.remove();
         }
-        results.append(masonry(gifs, {}, 3));
+        results.append(masonry(gifs, {}, columnsFor(MIN_COL, 3)));
     }
 }
 
@@ -345,6 +354,14 @@ async function doSearch() {
     }
 }
 
+// Re-render whatever is on screen so the masonry picks up a new column count.
+// Search rebuilds from searchCache, so resizing never costs an API request.
+function reflow() {
+    if (view === 'landing') renderLanding();
+    else if (view === 'favorites') renderFavoritesView();
+    else if (view === 'search') doSearch();
+}
+
 const searchCache = new Map();
 
 function matchFavorites(term) {
@@ -367,12 +384,32 @@ function renderResults(favMatches, gifs) {
         results.append(hint('No GIFs found.'));
         return;
     }
-    results.append(masonry(items, {}, 3));
+    results.append(masonry(items, {}, columnsFor(MIN_COL, 3)));
 }
 
 // Fixed-width columns, dynamic tile heights. Each tile goes to the currently
 // shortest column (heights tracked from the API's aspect ratios) so reading
 // order stays roughly left-to-right and favorites stay on top, Giphy style.
+// Columns grow with the window instead of being fixed at three. The floor is
+// what the extension's 550px popup already shows, so the popup is unchanged
+// and only the web app (which can be any size) ever sees more: a column never
+// gets narrower than it is there, it just stops adding columns until the next
+// one fits at that width.
+const GRID_GAP = 10;              // matches .masonry / .mcol gap in popup.css
+const MIN_COL = 165;             // ~the column width three-up at 550px
+const MIN_COL_TAGS = 250;        // favorites tiles carry a tag row, so wider
+
+function columnsFor(minCol, floor) {
+    const content = $('#content');
+    const pad = getComputedStyle(content);
+    const avail = content.clientWidth
+        - parseFloat(pad.paddingLeft) - parseFloat(pad.paddingRight);
+    // n columns need n*minCol plus (n-1) gaps, so solve with one gap added
+    // to both sides rather than special-casing the last column.
+    const fits = Math.floor((avail + GRID_GAP) / (minCol + GRID_GAP));
+    return Math.max(floor, fits || floor);
+}
+
 function masonry(items, opts, nCols) {
     const wrap = el('div', { class: 'masonry' + (opts.tags ? ' with-tags' : '') });
     const cols = Array.from({ length: nCols }, () => {
@@ -390,7 +427,9 @@ function masonry(items, opts, nCols) {
 
 // ---------- tiles ----------
 
-// Must match the CSS hover scale and the #content fade-mask stops.
+// HOVER_SCALE is the ceiling, not a constant: the CSS reads --hover-scale
+// per tile and falls back to this. FADE_* must match the #content fade-mask
+// stops.
 const HOVER_SCALE = 1.6;
 const FADE_TOP = 0.03;
 const FADE_BOTTOM = 0.05;
@@ -411,15 +450,31 @@ function adjustHoverOrigin(tile) {
     // where overflow-x clips it and eats the ring on that side.
     const visibleRight = c.left + content.clientWidth;
 
-    const extraY = r.height * (HOVER_SCALE - 1);
+    // Cap the zoom so a lifted tile can never outgrow the visible area. At the
+    // extension's 550px this never binds (three-up tiles are ~167px, and 1.6x
+    // of that is well inside the popup), so the popup is untouched; it only
+    // engages in the web app, where a wide window makes columns wide enough
+    // that a flat 1.6x would run past the edges. Never below 1: shrinking a
+    // hovered tile would be worse than not zooming it.
+    const scale = Math.max(1, Math.min(
+        HOVER_SCALE,
+        (content.clientWidth - 8) / r.width,
+        (maxBottom - minTop) / r.height));
+    tile.style.setProperty('--hover-scale', scale);
+
+    // Everything below is in terms of the scale actually used, not the
+    // ceiling, or the origin would be solved for a size the tile never
+    // reaches. At scale 1 the extras are 0 and both factors fall back to
+    // 0.5, which is the right no-op origin.
+    const extraY = r.height * (scale - 1);
     const fyMax = (r.top - minTop) / extraY;
     const fyMin = 1 - (maxBottom - r.bottom) / extraY;
-    const fy = Math.max(0, Math.min(1, Math.min(Math.max(0.5, fyMin), fyMax)));
+    const fy = Math.max(0, Math.min(1, Math.min(Math.max(0.5, fyMin), fyMax))) || 0.5;
 
-    const extraX = r.width * (HOVER_SCALE - 1);
+    const extraX = r.width * (scale - 1);
     const fxMax = (r.left - (c.left + 4)) / extraX;
     const fxMin = 1 - ((visibleRight - 4) - r.right) / extraX;
-    const fx = Math.max(0, Math.min(1, Math.min(Math.max(0.5, fxMin), fxMax)));
+    const fx = Math.max(0, Math.min(1, Math.min(Math.max(0.5, fxMin), fxMax))) || 0.5;
 
     tile.style.transformOrigin = `${fx * 100}% ${fy * 100}%`;
 
@@ -561,7 +616,7 @@ function renderFavoritesView() {
         results.append(hint('No favorites yet. Hover a GIF and click the ♥.'));
         return;
     }
-    results.append(masonry(favs, { tags: true }, 2));
+    results.append(masonry(favs, { tags: true }, columnsFor(MIN_COL_TAGS, 2)));
 }
 
 function updateFavoritesCaption() {
