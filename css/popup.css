@@ -157,6 +157,16 @@ body {
     border-color: var(--magenta);
 }
 
+/* "You are here" for the nav buttons. Cyan and a faint wash of it, so it
+   reads as a held state rather than another hover. Favorites still flips to
+   magenta under the cursor: the id selector outranks this, which is what we
+   want, since hover feedback should survive being on the page you are on. */
+.icon-btn.current {
+    color: var(--cyan);
+    border-color: var(--cyan);
+    background: rgba(42, 161, 152, 0.15);
+}
+
 /* ---------- content ---------- */
 
 #content {
@@ -180,6 +190,12 @@ body {
     padding: 2px 4px 10px;
     color: var(--base1);
     font-weight: 600;
+}
+
+/* Same reasoning as .use-count: how many favorites you have is your library
+   talking, so it gets the heart's color. */
+.caption .count {
+    color: var(--magenta);
 }
 
 /* Recent / Trending toggle on the landing view */
@@ -537,7 +553,10 @@ body {
     top: 4px;
     right: 4px;
     background: rgba(0, 43, 54, 0.85);
-    color: var(--base0);
+    /* Magenta because a copy count is library data, the same family as the
+       heart that put the GIF here. Reinforces what magenta already means
+       rather than spending it somewhere new. */
+    color: var(--magenta);
     font-size: 9px;
     font-weight: 700;
     padding: 1px 6px;

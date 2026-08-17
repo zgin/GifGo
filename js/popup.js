@@ -73,6 +73,22 @@ function hint(text) {
     return el('p', { class: 'hint center' }, text);
 }
 
+// Light up whichever top bar button matches what is on screen, so there is
+// some answer to "where am I". Cyan, matching the Recent/Trending toggle's
+// active state: cyan is consistently "you are here" while magenta stays
+// reserved for favorites themselves, which is what makes a magenta heart
+// scannable in a grid of moving images. Search results and the Trending
+// half of the landing view light nothing, because neither is somewhere a
+// button took you.
+function markCurrentView() {
+    const current = view === 'landing'
+        ? (settings.landing === 'trending' ? null : 'recentsButton')
+        : { favorites: 'favoritesButton', settings: 'settingsButton' }[view];
+    for (const id of ['recentsButton', 'favoritesButton', 'settingsButton']) {
+        $('#' + id).classList.toggle('current', id === current);
+    }
+}
+
 // Edge ignores ::-webkit-scrollbar outright (it paints its own Fluent
 // scrollbars), so the magenta thumb never lands there and the popup gets an
 // OS-grey one instead. The standard scrollbar-color property is what Edge
@@ -288,6 +304,7 @@ function onGridKeydown(e) {
 async function renderLanding() {
     if (view === 'settings') closeSettings();
     view = 'landing';
+    markCurrentView();
     select(null);
 
     const results = $('#results');
@@ -353,6 +370,7 @@ async function doSearch() {
     }
     closeSettings();
     view = 'search';
+    markCurrentView();
     select(null);
 
     const results = $('#results');
@@ -637,6 +655,7 @@ async function toggleFavorite(data, button, tile) {
 function renderFavoritesView() {
     closeSettings();
     view = 'favorites';
+    markCurrentView();
     select(null);
 
     const results = $('#results');
@@ -644,7 +663,11 @@ function renderFavoritesView() {
     results.innerHTML = '';
 
     const favs = Object.values(favorites).sort(byMostUsed);
-    results.append(el('div', { class: 'caption', id: 'favCaption' }, `Favorites (${favs.length})`));
+    // Label and count share one flex child: .caption is space-between (it
+    // pushes the landing view's Recent/Trending toggle to the right), so two
+    // children here would fling the count to the far edge.
+    results.append(el('div', { class: 'caption', id: 'favCaption' },
+        el('span', {}, 'Favorites ', el('span', { class: 'count' }, `(${favs.length})`))));
     if (!favs.length) {
         results.append(hint('No favorites yet. Hover a GIF and click the ♥.'));
         return;
@@ -653,8 +676,9 @@ function renderFavoritesView() {
 }
 
 function updateFavoritesCaption() {
-    const caption = $('#favCaption');
-    if (caption) caption.textContent = `Favorites (${Object.keys(favorites).length})`;
+    // Only the count, so the surrounding label and its magenta span survive.
+    const count = $('#favCaption .count');
+    if (count) count.textContent = `(${Object.keys(favorites).length})`;
 }
 
 function makeTagsRow(fav) {
@@ -698,6 +722,7 @@ function makeTagsRow(fav) {
 
 function openSettings(message = '') {
     view = 'settings';
+    markCurrentView();
     $('#results').hidden = true;
     $('#settingsPanel').hidden = false;
     const note = $('#settingsNote');
@@ -712,6 +737,7 @@ function closeSettings() {
     $('#settingsPanel').hidden = true;
     $('#results').hidden = false;
     view = 'search';
+    markCurrentView();
 }
 
 function applySettingsToForm() {
