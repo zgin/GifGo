@@ -64,10 +64,12 @@ Then the web app, which none of the above changes:
   mirror drift. Split it out only if it ever needs to be private or grows its
   own release cadence.
 - `server/` exists today holding only `config.json` (the key-delivery file
-  above); the popup port and PWA manifest are still unbuilt. The Cloudflare
-  Pages project ("gifgo"), the `gifgo.app` custom domain, and the GitHub
-  Actions deploy job (`.github/workflows/deploy-server.yml`) are all in
-  place; the only thing left is pushing main so it actually deploys.
+  above); the popup port and PWA manifest are still unbuilt. It's live: a
+  `gifgo` Cloudflare Worker with static assets (not a Pages project;
+  Cloudflare's dashboard creates static sites as Workers-with-assets now)
+  serves it at the `gifgo.app` custom domain, deployed by
+  `.github/workflows/deploy-server.yml` via `wrangler.toml` on every push to
+  main that touches `server/**` or `wrangler.toml`.
 
 ## Then: Windows tray app (the flagship)
 
