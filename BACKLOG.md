@@ -3,18 +3,14 @@
 Feature ideas not in the current release. Ordered by how much each shortens the
 core loop: urge → find → paste.
 
-## Now: Chrome Web Store v2 release
+## In review
 
-Screenshots, listing copy, privacy policy and the pack script are done. What
-is left needs a browser and a developer account:
+v2.0 is submitted to both the Chrome Web Store and Edge Add-ons. Nothing to
+do but wait. Once approved, tag the release commit. If a reviewer comes back
+with questions, the permission justifications and test instructions they were
+given are in `dev/store-listing.md`.
 
-- Load `dist/gifgo-2.0.zip` unpacked in real Chrome and check the parts the
-  harness cannot: clipboard copies (link and image), the Alt+Shift+G
-  shortcut, and favorites syncing across profiles.
-- Submit to the Chrome Web Store, then to Edge Add-ons.
-- Tag the release commit once approved.
-
-## Next: GifGo server (Klipy proxy) and web app
+## Now: GifGo server (Klipy proxy) and web app
 
 Klipy (klipy.com/developers, docs.klipy.com) is free: test keys are limited to
 100 req/hour like Giphy dev keys, but **production keys are unlimited** (their
