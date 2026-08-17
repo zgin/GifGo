@@ -11,6 +11,12 @@ import { getKlipyAppKey } from './remoteConfig.js';
 
 const $ = (sel) => document.querySelector(sel);
 
+// True only inside the real extension popup, never in the web app (where
+// server/chrome-shim.js polyfills chrome.storage but nothing else). autoClose
+// closing the popup makes sense for a transient extension popup; closing a
+// persistent web app tab or PWA window on every copy would not.
+const isExtension = typeof chrome !== 'undefined' && !!chrome.runtime?.id;
+
 let settings;
 let apiKey = null;
 let favorites = {};        // id -> favorite
@@ -490,7 +496,7 @@ async function runAction(key, data, tile) {
         addRecent(data).catch(() => {});
         recordUse(data.id).then((u) => { usage = u; }).catch(() => {});
         // Long enough to see the confirmation, short enough to feel instant.
-        if (settings.autoClose) setTimeout(() => window.close(), 650);
+        if (settings.autoClose && isExtension) setTimeout(() => window.close(), 650);
     } catch (err) {
         console.error(err);
         flash(tile, 'Copy failed', { error: true });
@@ -628,6 +634,7 @@ function applySettingsToForm() {
     $('#defaultActionSelect').value = settings.defaultAction;
     $('#limitSelect').value = String(settings.limit);
     $('#ratingSelect').value = settings.rating;
+    $('#autoCloseRow').hidden = !isExtension;
     $('#autoCloseCheck').checked = settings.autoClose;
     $('#liveSearchCheck').checked = settings.liveSearch;
     const base = settings.provider === 'klipy' ? 'Search KLIPY' : 'Search GIFs';
