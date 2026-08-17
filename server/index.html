@@ -9,37 +9,32 @@
     <style>
         /* Page shell for running the popup UI standalone, outside the
            browser action popup it was designed for. css/popup.css stays
-           untouched: its rules still size and color #gifgo-app exactly like
-           they size html/body inside the extension, just retargeted here. */
+           untouched: #gifgo-app takes exactly the rules that file gives
+           html/body inside the extension, sized to the window rather than
+           to a fixed 550x600, so the starfield and the top bar extend to
+           whatever size the window is instead of sitting in a letterbox.
+           No border-radius and no box-shadow on purpose: #topbar rounds its
+           own bottom corners, and rounding this box on top of that squared
+           off the wrong end of it. */
         html, body {
-            width: auto;
-            height: auto;
-            min-height: 100vh;
+            width: 100%;
+            height: 100%;
             margin: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: var(--base03);
-            /* #gifgo-app is a fixed 550x600 box. If the window's actual
-               viewport ever ends up shorter than that (a PWA's title bar
-               eats into it in a way the extension popup never has to deal
-               with), overflow here would otherwise draw the browser's
-               default, unstyled scrollbar around the whole page, visibly
-               different from #content's custom one. Clip instead: the
-               resize script below is what actually prevents the mismatch. */
+            /* Nothing here should ever scroll: #content is the scroller and
+               it draws the custom magenta scrollbar. Without this, anything
+               overflowing the window gets the browser's own default
+               scrollbar around the whole page, which reads as a completely
+               different control. */
             overflow: hidden;
         }
         #gifgo-app {
-            width: 550px;
-            height: 600px;
+            width: 100%;
+            height: 100%;
             display: flex;
             flex-direction: column;
             background: var(--base03) url('images/starfield.gif') repeat;
             color: var(--base0);
             font: 14px/1.4 system-ui, sans-serif;
-            border-radius: 10px;
-            overflow: hidden;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
         }
     </style>
     <script src="chrome-shim.js"></script>
