@@ -1,0 +1,12 @@
+{
+    "name": "GifGo",
+    "short_name": "GifGo",
+    "description": "Search GIFs and copy them, as links or as images, straight to your clipboard.",
+    "start_url": ".",
+    "display": "standalone",
+    "background_color": "#002b36",
+    "theme_color": "#073642",
+    "icons": [
+        { "src": "images/gifgo_logo_128.png", "sizes": "128x128", "type": "image/png" }
+    ]
+}

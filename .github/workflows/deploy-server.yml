@@ -5,6 +5,9 @@ on:
     branches: [main]
     paths:
       - 'server/**'
+      - 'js/**'
+      - 'css/**'
+      - 'images/**'
       - 'wrangler.toml'
       - '.github/workflows/deploy-server.yml'
   workflow_dispatch: {}
@@ -17,6 +20,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      # Cloudflare Workers assets only serves files inside wrangler.toml's
+      # assets.directory (server/), so the shared js/css/images root
+      # directories get copied in here, every deploy, from the single
+      # source of truth. Never hand-maintained, never committed (see
+      # .gitignore) — this is the one step that keeps that true.
+      - name: Stage shared assets
+        run: |
+          cp -r js server/js
+          cp -r css server/css
+          cp -r images server/images
 
       - name: Publish to Cloudflare Workers
         uses: cloudflare/wrangler-action@v3

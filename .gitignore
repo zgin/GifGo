@@ -1,2 +1,11 @@
 # Store packages built by pack.ps1
 dist/
+
+# Staged by the deploy workflow just before `wrangler deploy` (copies root
+# js/, css/, images/ into server/ so Cloudflare Workers assets, which only
+# serves files inside assets.directory, can reach them). Generated every
+# deploy from the single source of truth in root js/css/images; never
+# hand-maintained, never committed.
+server/js/
+server/css/
+server/images/
