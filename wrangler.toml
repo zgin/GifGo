@@ -1,0 +1,7 @@
+# Deploys server/ as a static Worker (no server-side code, just assets) to
+# gifgo.app. See .github/workflows/deploy-server.yml.
+name = "gifgo"
+compatibility_date = "2026-08-16"
+
+[assets]
+directory = "./server"
