@@ -13,7 +13,7 @@ const GIPHY = 'giphy';
 const isNamespaced = (id) => typeof id === 'string' && id.includes(':');
 
 const DEFAULT_SETTINGS = {
-    provider: 'giphy',      // 'giphy' | 'klipy'
+    provider: 'klipy',      // 'giphy' | 'klipy'; see getSettings for the carve-out
     defaultAction: 'linkSmall',
     limit: 30,
     rating: 'pg-13',
@@ -26,7 +26,19 @@ const DEFAULT_SETTINGS = {
 
 export async function getSettings() {
     const { settings } = await sync.get('settings');
-    return { ...DEFAULT_SETTINGS, ...(settings || {}) };
+    const merged = { ...DEFAULT_SETTINGS, ...(settings || {}) };
+    // New installs land on Klipy, which needs no key. Anyone upgrading from a
+    // version that predates the provider setting went to the trouble of
+    // creating a Giphy key, so that is a choice, not a default: leave them on
+    // Giphy until they switch it themselves.
+    // Covers both a settings object saved before the provider existed and no
+    // settings object at all, which is what an upgrader who set a key and
+    // never touched a default looks like.
+    if (!settings || settings.provider === undefined) {
+        const { giphyApiKey } = await sync.get('giphyApiKey');
+        if (giphyApiKey) merged.provider = 'giphy';
+    }
+    return merged;
 }
 
 export async function saveSettings(patch) {

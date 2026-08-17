@@ -52,11 +52,17 @@
             <button type="button" id="searchButton" class="icon-btn primary" title="Search">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             </button>
+            <button type="button" id="recentsButton" class="icon-btn" title="Recent copies">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                <span class="btn-label">Recents</span>
+            </button>
             <button type="button" id="favoritesButton" class="icon-btn" title="Favorites">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                <span class="btn-label">Favorites</span>
             </button>
             <button type="button" id="settingsButton" class="icon-btn" title="Settings">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+                <span class="btn-label">Settings</span>
             </button>
         </header>
 
@@ -136,16 +142,20 @@
 
     <script>
         // Only in the installed PWA (never a regular tab, where resizeTo is
-        // blocked anyway): size the window so its content viewport is
-        // exactly 550x600, the fixed size the whole UI assumes. resizeTo
-        // sets the outer window size including its title bar, so measure
-        // that overhead (outerHeight - innerHeight, same idea for width)
-        // and add it in, rather than sizing the window itself to 550x600
-        // and leaving the actual content area short.
+        // blocked anyway): open at a size worth having its own window for,
+        // rather than mimicking the 550px browser popup. 730 is what
+        // columnsFor() in popup.js needs to lay out four columns (it wants
+        // 690px of usable width, and the scrollbar gutter plus the content
+        // padding eat 28 of it); anything from 718 to 892 lands on four, so
+        // this is not on a knife edge. resizeTo sets the OUTER size including
+        // the title bar, so the chrome overhead is measured and added rather
+        // than eaten out of the content area. Only the first launch really
+        // takes: once the window is resized by hand the browser remembers
+        // that instead, which is the behavior you want.
         if (window.matchMedia('(display-mode: standalone)').matches) {
             const chromeWidth = window.outerWidth - window.innerWidth;
             const chromeHeight = window.outerHeight - window.innerHeight;
-            window.resizeTo(550 + chromeWidth, 600 + chromeHeight);
+            window.resizeTo(730 + chromeWidth, 750 + chromeHeight);
         }
         if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
     </script>

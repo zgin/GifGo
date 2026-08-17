@@ -115,6 +115,27 @@ body {
     height: 16px;
 }
 
+/* Icons only by default, which is all the 550px popup ever has room for.
+   Given a wider window (the PWA), the buttons grow words. The search button
+   is left out on purpose: it sits hard against the input and reads as part
+   of it, so a label there would be noise. */
+.btn-label {
+    display: none;
+}
+
+@media (min-width: 700px) {
+    .icon-btn:not(.primary) {
+        width: auto;
+        gap: 6px;
+        padding: 0 10px;
+    }
+
+    .icon-btn:not(.primary) .btn-label {
+        display: inline;
+        font-size: 13px;
+    }
+}
+
 .icon-btn:hover {
     color: var(--cyan);
     border-color: var(--cyan);

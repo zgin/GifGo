@@ -34,10 +34,13 @@ So the extension talks to Klipy directly. **Done as of 2026-08-16:**
   normalize each provider's response internally. A 401/403 from Klipy
   triggers one `refreshKlipyKey()` + retry before giving up.
 - Provider setting: "Klipy (no key needed)" vs "Giphy (your own key)" in
-  settings. Existing installs stay on Giphy by default (nothing changes for
-  them unless they switch); new installs also default to Giphy for now,
-  flip `DEFAULT_SETTINGS.provider` in `js/storage.js` to `'klipy'` once
-  ready to make it the primary experience.
+  settings. **Klipy is the default as of 2026-08-17**, so a new install
+  searches immediately with no key and no setup. Upgraders are left alone:
+  `getSettings()` treats a saved Giphy key with no provider recorded as a
+  deliberate choice and keeps them on Giphy until they switch. That covers
+  both a settings object predating the provider field and no settings object
+  at all, which is what someone who set a key and never touched a default
+  looks like.
 - "Search KLIPY" placeholder and a "Powered by KLIPY" footer link (the
   watermark is optional per Klipy's docs, added anyway for parity with the
   Giphy attribution).

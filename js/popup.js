@@ -142,6 +142,18 @@ function wireEvents() {
 
     document.addEventListener('keydown', onGridKeydown);
 
+    // Jump back to recent copies from anywhere. Clears the search box on the
+    // way so the top bar is not still showing a term whose results just left
+    // the screen, and pins the landing mode the way the Recent/Trending
+    // toggle does, so the next open comes back here too.
+    $('#recentsButton').addEventListener('click', async () => {
+        clearTimeout(searchTimer);
+        $('#searchInput').value = '';
+        $('#clearSearchButton').hidden = true;
+        if (settings.landing !== 'recents') settings = await saveSettings({ landing: 'recents' });
+        renderLanding();
+    });
+
     $('#favoritesButton').addEventListener('click', renderFavoritesView);
     $('#settingsButton').addEventListener('click', () => {
         view === 'settings' ? closeSettings() : openSettings();
