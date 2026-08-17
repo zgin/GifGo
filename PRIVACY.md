@@ -27,6 +27,9 @@ across browsers where you are signed in:
 Stored on your device only (`chrome.storage.local`), never synced:
 
 - Your recent copies: up to 24 recently copied GIFs.
+- A cached copy of a small shared configuration file GifGo fetches from its
+  own server (see below), so a shared API key keeps working if that server
+  is briefly unreachable.
 
 You can remove any of it at any time. Deleting a favorite removes its entry,
 clearing your key removes the key, and uninstalling GifGo removes all of it.
@@ -48,8 +51,15 @@ As with any web request, Giphy will also see your IP address and standard
 request headers. Giphy's handling of that data is covered by their own privacy
 policy at https://support.giphy.com/hc/en-us/articles/360020027752-GIPHY-Privacy-Policy.
 
-GifGo makes no other network requests. It contacts no other host, and it
-contains no remote code.
+GifGo also fetches a small configuration file from `gifgo.app`, a server we
+control, roughly once a day. That file holds a shared API key so most people
+never have to create their own account with a second GIF provider; the
+request carries no search terms, no identifying information, and nothing you
+have typed or copied. This file is data, not code: it contains no scripts,
+and GifGo runs nothing it receives from that request.
+
+GifGo contains no remote code, and contacts no other host than the two
+described here.
 
 ## Your clipboard
 
@@ -62,9 +72,12 @@ Clipboard API on the strength of that click or keypress alone.
 
 - `storage`: to save the settings, favorites, usage counts, and recents
   described above.
+- `alarms`: to schedule the once-a-day check for a fresh shared API key.
 - `https://api.giphy.com/*`: to run searches and load trending GIFs.
 - `https://*.giphy.com/*`: to load GIF images and fetch the image data used
   when you copy a GIF as an image.
+- `https://gifgo.app/*`: to fetch the shared API key configuration file
+  described above.
 
 ## Children
 

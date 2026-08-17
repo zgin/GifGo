@@ -6,11 +6,16 @@
       "128": "images/gifgo_logo_128.png"
     },
     "description": "Search Giphy, copy GIF links or images, and save favorites",
-    "permissions": ["storage"],
+    "permissions": ["storage", "alarms"],
     "host_permissions": [
       "https://api.giphy.com/*",
-      "https://*.giphy.com/*"
+      "https://*.giphy.com/*",
+      "https://gifgo.app/*"
     ],
+    "background": {
+      "service_worker": "js/background.js",
+      "type": "module"
+    },
     "action": {
       "default_popup": "popup.html"
     },

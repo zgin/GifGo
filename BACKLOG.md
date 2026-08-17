@@ -40,20 +40,17 @@ So the extension talks to Klipy directly:
   integration is tested; the test key's 100/hour is the same ceiling that
   keeps `liveSearch` off today. Flip the `liveSearch` default to on for the
   Klipy provider once the production key is live.
-- **Fetch the key from a static `config.json`** on the same host that serves
-  the web app, so it can be rotated without waiting days for a store review.
-  Resolve through a fallback chain (fetched, then last cached in
-  `chrome.storage.local`, then a constant baked into the build) so the
-  extension still works when the host is down. Refresh on a daily
-  `chrome.alarms` timer and, more usefully, on any 401 or 403 from Klipy:
-  pull a fresh key and retry once, so a revoked key heals itself. Serving a
-  config file is not proxying, so this stays inside Klipy's terms, and a key
-  string is data rather than remotely hosted code, so MV3 is fine with it.
-  This does not make the key secret; nothing can. Sequencing: build the
-  static host first and ship this together with the Klipy switch, because
-  adding the host permission in a later version costs a second store review.
-  Needs a line in PRIVACY.md, since the extension would start contacting a
-  server of ours.
+- **Key delivery: mostly built.** `js/remoteConfig.js` resolves the shared
+  Klipy key through the fallback chain (fetched from `gifgo.app/config.json`,
+  then the copy cached in `chrome.storage.local`, then a constant baked into
+  the build), and `js/background.js` refreshes it on a daily `chrome.alarms`
+  timer. `manifest.json` and `PRIVACY.md` already cover the new host and the
+  `alarms` permission. What's still open: the Klipy adapter needs to call
+  `refreshKlipyKey()` and retry once on any 401/403, so a revoked key heals
+  itself (no code exists yet to wire that, since the adapter doesn't exist
+  yet); `server/config.json` is a placeholder (`klipyAppKey: ""`) until a
+  production key exists to put in it; and the file isn't live anywhere until
+  the static host is deployed (below).
 
 Then the web app, which none of the above changes:
 
@@ -66,6 +63,10 @@ Then the web app, which none of the above changes:
   reuses the root `js/` and `css/` rather than copying them; one repo, no
   mirror drift. Split it out only if it ever needs to be private or grows its
   own release cadence.
+- `server/` exists today holding only `config.json` (the key-delivery file
+  above); the popup port and PWA manifest are still unbuilt. Nothing is
+  deployed anywhere yet: still needs a Cloudflare Pages project, the
+  `CLOUDFLARE_API_TOKEN` repo secret (JP), and the GitHub Actions deploy job.
 
 ## Then: Windows tray app (the flagship)
 

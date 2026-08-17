@@ -19,6 +19,8 @@ $Files = @(
     'js/api.js',
     'js/storage.js',
     'js/clipboard.js',
+    'js/background.js',
+    'js/remoteConfig.js',
     'images/gifgo_logo_128.png',
     'images/giphy_attribution.gif',
     'images/starfield.gif'
