@@ -55,24 +55,37 @@ Still open:
   extension itself, not just the harness's mocked shape (dev/notes/klipy-api.md)
   and the earlier standalone `curl`.
 
-Then the web app, which none of the above changes:
+The web app: **live as of 2026-08-16** at gifgo.app, ahead of where this
+list originally put it (JP wanted a demo site before applying for Klipy
+production access). Confirmed working end to end from a fresh visitor: loads,
+provider switch, real Klipy search results, no console errors.
 
-- The popup UI already runs in a plain browser page, so serve it as a site
-  with a web manifest. Installed as a PWA it pins to the taskbar and runs in
-  its own window; this is the taskbar story for locked-down corporate
-  machines that block installing unsigned executables.
-- Lives in this repo under `server/`, now just a static host for those assets
-  and no API in front of them (serving our own files is not proxying). It
-  reuses the root `js/` and `css/` rather than copying them; one repo, no
-  mirror drift. Split it out only if it ever needs to be private or grows its
-  own release cadence.
-- `server/` exists today holding only `config.json` (the key-delivery file
-  above); the popup port and PWA manifest are still unbuilt. It's live: a
-  `gifgo` Cloudflare Worker with static assets (not a Pages project;
-  Cloudflare's dashboard creates static sites as Workers-with-assets now)
-  serves it at the `gifgo.app` custom domain, deployed by
-  `.github/workflows/deploy-server.yml` via `wrangler.toml` on every push to
-  main that touches `server/**` or `wrangler.toml`.
+- `server/index.html` mirrors popup.html but runs standalone: PWA
+  installable (`manifest.webmanifest`, a minimal `sw.js`), and
+  `server/chrome-shim.js` polyfills `chrome.storage.sync`/`local` with
+  `localStorage` so `js/popup.js`, `js/storage.js`, and `js/remoteConfig.js`
+  run completely unmodified. The one real gap versus the extension:
+  localStorage doesn't sync across devices, since there's no browser profile
+  for it to sync through.
+- "Reuses root js/ and css/ rather than copying them" turned out to need a
+  caveat: Cloudflare Workers assets only serves files inside
+  `wrangler.toml`'s `assets.directory` (`server/`), so a relative `../js/`
+  reference from `server/index.html` 404s once deployed even though it
+  resolves fine in local testing (which serves the whole repo tree).
+  `.github/workflows/deploy-server.yml` now stages `js/`, `css/`, and
+  `images/` into `server/` right before `wrangler deploy`, generated fresh
+  every deploy from the single source of truth and gitignored, so there's
+  still exactly one copy of each file in git — just not in the deployed
+  output. A Cloudflare Worker with static assets is what got created (not a
+  classic Pages project; Cloudflare's dashboard makes static sites that way
+  now), custom-domained to gifgo.app.
+- Found and fixed testing it live: `autoClose`'s `window.close()` closed the
+  whole browser tab after every copy, since the web app has no
+  `chrome.runtime` to gate it the way the extension popup does. Fixed with
+  an `isExtension` check in `js/popup.js`; the "Close after copying" setting
+  is hidden entirely outside the real extension now.
+- Not done: a 512px icon (only the 128px extension icon exists today), and
+  no offline caching in `sw.js` (installable, but not offline-capable yet).
 
 ## Then: Windows tray app (the flagship)
 
