@@ -73,10 +73,26 @@ function hint(text) {
     return el('p', { class: 'hint center' }, text);
 }
 
+// Edge ignores ::-webkit-scrollbar outright (it paints its own Fluent
+// scrollbars), so the magenta thumb never lands there and the popup gets an
+// OS-grey one instead. The standard scrollbar-color property is what Edge
+// honors, but setting that in Chromium disables the webkit pseudo-elements,
+// taking the fixed 14px gutter and the proximity-fattening with them. So ask
+// the browser which one it actually applied rather than sniffing the UA:
+// measure a probe that requested 14px and see whether it got it.
+function probeScrollbars() {
+    const probe = el('div', { class: 'sb-probe' });
+    document.body.append(probe);
+    const honored = probe.offsetWidth - probe.clientWidth === 14;
+    probe.remove();
+    if (!honored) document.documentElement.classList.add('std-scrollbars');
+}
+
 // ---------- init ----------
 
 async function init() {
     [settings, apiKey, favorites, usage] = await Promise.all([getSettings(), getApiKey(), getFavorites(), getUsage()]);
+    probeScrollbars();
     applySettingsToForm();
     wireEvents();
 

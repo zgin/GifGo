@@ -688,6 +688,33 @@ body {
     border-radius: 10px;
 }
 
+/* Off-screen scroller that probeScrollbars() in popup.js measures: it asks
+   for the same 14px as #content, so a browser that honors ::-webkit-scrollbar
+   reports a 14px gutter and one that ignores it reports its own width. */
+.sb-probe {
+    position: absolute;
+    top: -9999px;
+    left: -9999px;
+    width: 100px;
+    height: 50px;
+    overflow-y: scroll;
+}
+
+.sb-probe::-webkit-scrollbar {
+    width: 14px;
+}
+
+/* Edge draws Fluent scrollbars and ignores every ::-webkit-scrollbar rule
+   above, so the thumb comes out the OS grey rather than magenta. Edge does
+   honor the standard property, but specifying it in Chromium switches the
+   webkit pseudo-elements off (and the fixed 14px gutter and the
+   proximity-fattening with them), so it is scoped to the browsers that
+   actually need it. */
+.std-scrollbars #content,
+.std-scrollbars .notification pre {
+    scrollbar-color: var(--magenta) transparent;
+}
+
 @media (prefers-reduced-motion: reduce) {
     .tile, .actions, .overlay, .icon-btn { transition: none !important; }
     .loader { animation: none; }
