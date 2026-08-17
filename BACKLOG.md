@@ -10,43 +10,66 @@ do but wait. Once approved, tag the release commit. If a reviewer comes back
 with questions, the permission justifications and test instructions they were
 given are in `dev/store-listing.md`.
 
-## Now: GifGo server (Klipy proxy) and web app
+## Now: move to Klipy, then the web app
 
 Klipy (klipy.com/developers, docs.klipy.com) is free: test keys are limited to
 100 req/hour like Giphy dev keys, but **production keys are unlimited** (their
-model monetizes with optional ad content, not API fees). Plan:
+model monetizes with optional ad content, not API fees). Account and test key
+are in hand.
 
-- Lives in this repo under `server/`: the worker script, `wrangler.toml`,
-  and the web app assets it serves. The web app reuses the root `js/` and
-  `css/` files rather than copying them; one repo, no mirror drift. Split
-  into its own repo only if the server ever needs to be private or grows
-  its own release cadence.
-- Small proxy service (host it ourselves): `GET /search?q=`, `GET /trending`.
-  The Klipy production key lives only on the server (a Wrangler secret,
-  never in the repo); the extension ships with no key requirement at all.
-- **Server-side response cache** is the workhorse: popular search terms and
-  trending are served from cache (60s–1h TTL), so even live typing across all
-  users costs few upstream calls.
-- **Abuse control, layered** (skip real user accounts: OAuth for a GIF picker
-  kills the simple-and-clean ethos):
-  1. Per-IP token-bucket rate limit (e.g. 30 searches/min) + a global cap.
-  2. Anonymous install token: extension generates a random ID on install,
-     server rate-limits per token as well as per IP.
-  3. Check the `Origin: chrome-extension://<id>` header, spoofable by
-     scripts, but blocks lazy reuse; combined with 1+2 it is plenty until
-     the extension is popular enough to have a real abuse problem.
-- Extension keeps a provider setting: "GifGo server (no key needed)" vs
-  "My own Giphy key", a privacy escape hatch and failover if the server dies.
-  `js/api.js` is already the provider seam; add a Klipy response adapter
-  (renditions + width/height mapping) once a platform is registered and the
-  docs are readable.
-- Once the server exists, flip `liveSearch` default to on when the provider
-  is the GifGo server.
-- **Web app on the same backend**: the popup UI already runs in a plain
-  browser page, so serve it as a site with a web manifest. Installed as a
-  PWA it pins to the taskbar and runs in its own window; this is the
-  taskbar story for locked-down corporate machines that block installing
-  unsigned executables.
+The plan here used to be a proxy service that held the key server-side and
+cached responses in front of it. That is off the table. Klipy's integration
+requirements say API requests have to originate from the end user's browser
+or app, and that proxies, intermediaries and partner-operated caches each
+need written approval first. Their app key is a URL path segment and is meant
+to be visible in the client, so the proxy was never buying secrecy: it would
+only have moved the abuse surface off Klipy's infrastructure and onto an open
+endpoint of ours, which we would then have to rate-limit and pay for. Not
+worth building, and not worth asking permission to build.
+
+So the extension talks to Klipy directly:
+
+- Klipy adapter in `js/api.js`, alongside the Giphy one. The provider seam
+  already exists; the response mapping is worked out and the key goes in the
+  URL path rather than the query string.
+- Provider setting: "Klipy (no key needed)" vs "My own Giphy key". A privacy
+  escape hatch, and the failover if the shared key is ever revoked.
+- **Attribution is required**: "Search KLIPY" as the search placeholder
+  whenever Klipy is the provider. The Giphy logo link stays for Giphy.
+- **Namespace the favorite and usage keys by provider** before a second
+  source ships. `fav_<gifId>` is provider-blind today, so ids from two
+  sources can collide, and a saved record can point at URLs the other
+  provider cannot refresh. Cheap now, a migration later.
+- Request production access through the Partner Panel form once the
+  integration is tested; the test key's 100/hour is the same ceiling that
+  keeps `liveSearch` off today. Flip the `liveSearch` default to on for the
+  Klipy provider once the production key is live.
+- **Fetch the key from a static `config.json`** on the same host that serves
+  the web app, so it can be rotated without waiting days for a store review.
+  Resolve through a fallback chain (fetched, then last cached in
+  `chrome.storage.local`, then a constant baked into the build) so the
+  extension still works when the host is down. Refresh on a daily
+  `chrome.alarms` timer and, more usefully, on any 401 or 403 from Klipy:
+  pull a fresh key and retry once, so a revoked key heals itself. Serving a
+  config file is not proxying, so this stays inside Klipy's terms, and a key
+  string is data rather than remotely hosted code, so MV3 is fine with it.
+  This does not make the key secret; nothing can. Sequencing: build the
+  static host first and ship this together with the Klipy switch, because
+  adding the host permission in a later version costs a second store review.
+  Needs a line in PRIVACY.md, since the extension would start contacting a
+  server of ours.
+
+Then the web app, which none of the above changes:
+
+- The popup UI already runs in a plain browser page, so serve it as a site
+  with a web manifest. Installed as a PWA it pins to the taskbar and runs in
+  its own window; this is the taskbar story for locked-down corporate
+  machines that block installing unsigned executables.
+- Lives in this repo under `server/`, now just a static host for those assets
+  and no API in front of them (serving our own files is not proxying). It
+  reuses the root `js/` and `css/` rather than copying them; one repo, no
+  mirror drift. Split it out only if it ever needs to be private or grows its
+  own release cadence.
 
 ## Then: Windows tray app (the flagship)
 
