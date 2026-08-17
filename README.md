@@ -1,12 +1,13 @@
 # GifGo
 
-GifGo is a Chrome extension for searching Giphy and copying GIFs, as links or as actual
+GifGo is a Chrome extension for searching GIFs and copying them, as links or as actual
 images, straight to your clipboard. It's a fun and easy way to add some personality to
 your online conversations!
 
 ## Features
 
-- Search Giphy by keyword
+- Search GIFs by keyword, powered by Klipy by default (no account needed) or your own
+  Giphy API key
 - Hover a GIF for copy actions: link (small), link (big), image (small), image (big)
 - Click anywhere on a GIF to run your default copy action (configurable in settings)
 - Image copy writes multiple clipboard formats at once: rich editors that honor pasted
@@ -29,11 +30,13 @@ Install GifGo from the Chrome Web Store, or load it unpacked:
 
 ## Setup
 
-GifGo uses your own Giphy API key:
+GifGo works out of the box with Klipy, no account or key required. If you'd rather use
+your own Giphy account instead:
 
 1. Go to [developers.giphy.com](https://developers.giphy.com/) and create an app (API type).
 2. Copy the API key.
-3. Click the GifGo icon, open settings (sliders button), paste the key, and save.
+3. Click the GifGo icon, open settings (sliders button), switch the provider to Giphy,
+   paste the key, and save.
 
 ## Usage
 

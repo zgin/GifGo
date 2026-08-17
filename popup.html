@@ -31,13 +31,23 @@
         <section id="settingsPanel" hidden>
             <p id="settingsNote" class="note" hidden></p>
 
-            <h2>Giphy API key</h2>
-            <input type="password" id="apiKeyInput" placeholder="Enter your Giphy API key" autocomplete="off">
-            <p class="hint">Get a free key at <a href="https://developers.giphy.com/" target="_blank">developers.giphy.com</a> &rarr; Create an App &rarr; API.</p>
-            <div class="row">
-                <button type="button" id="saveKeyButton" class="btn primary">Save key</button>
-                <button type="button" id="removeKeyButton" class="btn danger">Remove</button>
-                <span id="keyStatus" class="hint"></span>
+            <h2>GIF source</h2>
+            <label>Provider
+                <select id="providerSelect">
+                    <option value="klipy">Klipy (no key needed)</option>
+                    <option value="giphy">Giphy (your own key)</option>
+                </select>
+            </label>
+
+            <div id="giphyKeySection">
+                <h2>Giphy API key</h2>
+                <input type="password" id="apiKeyInput" placeholder="Enter your Giphy API key" autocomplete="off">
+                <p class="hint">Get a free key at <a href="https://developers.giphy.com/" target="_blank">developers.giphy.com</a> &rarr; Create an App &rarr; API.</p>
+                <div class="row">
+                    <button type="button" id="saveKeyButton" class="btn primary">Save key</button>
+                    <button type="button" id="removeKeyButton" class="btn danger">Remove</button>
+                    <span id="keyStatus" class="hint"></span>
+                </div>
             </div>
 
             <h2>Defaults</h2>
@@ -72,16 +82,17 @@
             <label>Search as you type
                 <input type="checkbox" id="liveSearchCheck">
             </label>
-            <p class="hint">Live search is snappy but hungry: Giphy developer keys allow
-                only 100 requests per hour, and each keystroke pause costs one.</p>
+            <p class="hint">Live search is snappy but hungry: free API keys are rate-limited,
+                and each keystroke pause costs a request.</p>
             <p class="hint">Defaults save automatically and sync with your browser profile.</p>
         </section>
     </main>
 
     <footer id="footer">
-        <a href="https://giphy.com/" target="_blank">
+        <a id="giphyAttribution" href="https://giphy.com/" target="_blank">
             <img src="images/giphy_attribution.gif" alt="Powered by GIPHY">
         </a>
+        <a id="klipyAttribution" class="klipy-attribution" href="https://klipy.com/" target="_blank" hidden>Powered by KLIPY</a>
     </footer>
 </body>
 </html>

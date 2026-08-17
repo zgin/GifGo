@@ -27,30 +27,33 @@ only have moved the abuse surface off Klipy's infrastructure and onto an open
 endpoint of ours, which we would then have to rate-limit and pay for. Not
 worth building, and not worth asking permission to build.
 
-So the extension talks to Klipy directly:
+So the extension talks to Klipy directly. **Done as of 2026-08-16:**
 
-- Klipy adapter in `js/api.js`, alongside the Giphy one. The provider seam
-  already exists; the response mapping is worked out and the key goes in the
-  URL path rather than the query string.
-- Provider setting: "Klipy (no key needed)" vs "My own Giphy key". A privacy
-  escape hatch, and the failover if the shared key is ever revoked.
-- **Attribution is required**: "Search KLIPY" as the search placeholder
-  whenever Klipy is the provider. The Giphy logo link stays for Giphy.
+- Klipy adapter in `js/api.js`, alongside the Giphy one: `searchGifs`,
+  `trendingGifs`, and `validateKey` all take a provider argument now and
+  normalize each provider's response internally. A 401/403 from Klipy
+  triggers one `refreshKlipyKey()` + retry before giving up.
+- Provider setting: "Klipy (no key needed)" vs "Giphy (your own key)" in
+  settings. Existing installs stay on Giphy by default (nothing changes for
+  them unless they switch); new installs also default to Giphy for now,
+  flip `DEFAULT_SETTINGS.provider` in `js/storage.js` to `'klipy'` once
+  ready to make it the primary experience.
+- "Search KLIPY" placeholder and a "Powered by KLIPY" footer link (the
+  watermark is optional per Klipy's docs, added anyway for parity with the
+  Giphy attribution).
+- Key delivery (`js/remoteConfig.js` + `js/background.js`, config.json on
+  `gifgo.app`): live, holding the real test key as of 2026-08-16.
+
+Still open:
+
 - Request production access through the Partner Panel form once the
   integration is tested; the test key's 100/hour is the same ceiling that
   keeps `liveSearch` off today. Flip the `liveSearch` default to on for the
-  Klipy provider once the production key is live.
-- **Key delivery: mostly built.** `js/remoteConfig.js` resolves the shared
-  Klipy key through the fallback chain (fetched from `gifgo.app/config.json`,
-  then the copy cached in `chrome.storage.local`, then a constant baked into
-  the build), and `js/background.js` refreshes it on a daily `chrome.alarms`
-  timer. `manifest.json` and `PRIVACY.md` already cover the new host and the
-  `alarms` permission. What's still open: the Klipy adapter needs to call
-  `refreshKlipyKey()` and retry once on any 401/403, so a revoked key heals
-  itself (no code exists yet to wire that, since the adapter doesn't exist
-  yet); `server/config.json` is a placeholder (`klipyAppKey: ""`) until a
-  production key exists to put in it; and the file isn't live anywhere until
-  the static host is deployed (below).
+  Klipy provider once the production key is live. Needs a live site and a
+  demonstration video first (in progress, see below).
+- Verify the adapter against a real Klipy response from inside the
+  extension itself, not just the harness's mocked shape (dev/notes/klipy-api.md)
+  and the earlier standalone `curl`.
 
 Then the web app, which none of the above changes:
 

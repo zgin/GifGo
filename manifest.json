@@ -10,6 +10,8 @@
     "host_permissions": [
       "https://api.giphy.com/*",
       "https://*.giphy.com/*",
+      "https://api.klipy.com/*",
+      "https://*.klipy.com/*",
       "https://gifgo.app/*"
     ],
     "background": {

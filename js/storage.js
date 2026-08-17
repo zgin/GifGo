@@ -13,6 +13,7 @@ const GIPHY = 'giphy';
 const isNamespaced = (id) => typeof id === 'string' && id.includes(':');
 
 const DEFAULT_SETTINGS = {
+    provider: 'giphy',      // 'giphy' | 'klipy'
     defaultAction: 'linkSmall',
     limit: 30,
     rating: 'pg-13',

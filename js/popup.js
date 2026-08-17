@@ -7,6 +7,7 @@ import {
     getRecents, addRecent,
 } from './storage.js';
 import { copyText, copyImage } from './clipboard.js';
+import { getKlipyAppKey } from './remoteConfig.js';
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -73,12 +74,18 @@ async function init() {
     applySettingsToForm();
     wireEvents();
 
-    if (!apiKey) {
+    if (settings.provider === 'giphy' && !apiKey) {
         openSettings('Add your Giphy API key to get started.');
     } else {
         renderLanding();
     }
     $('#searchInput').focus();
+}
+
+// Klipy needs no key from the user (js/remoteConfig.js resolves the shared
+// one); Giphy needs the key saved in settings.
+async function resolveApiKey() {
+    return settings.provider === 'klipy' ? getKlipyAppKey() : apiKey;
 }
 
 let searchTimer;
@@ -138,6 +145,7 @@ function wireEvents() {
 
     $('#saveKeyButton').addEventListener('click', onSaveKey);
     $('#removeKeyButton').addEventListener('click', onRemoveKey);
+    $('#providerSelect').addEventListener('change', onProviderChange);
     for (const id of ['defaultActionSelect', 'limitSelect', 'ratingSelect', 'autoCloseCheck', 'liveSearchCheck']) {
         $('#' + id).addEventListener('change', onDefaultsChange);
     }
@@ -243,8 +251,9 @@ async function renderLanding() {
     results.hidden = false;
     results.innerHTML = '';
     const mode = settings.landing === 'trending' ? 'trending' : 'recents';
+    const providerLabel = settings.provider === 'klipy' ? 'Klipy' : 'Giphy';
     results.append(el('div', { class: 'caption' },
-        mode === 'recents' ? 'Recent copies' : 'Trending on Giphy',
+        mode === 'recents' ? 'Recent copies' : `Trending on ${providerLabel}`,
         landingToggle(mode)));
 
     if (mode === 'recents') {
@@ -256,12 +265,13 @@ async function renderLanding() {
         }
         results.append(masonry(recents, {}, 3));
     } else {
-        const cacheKey = `trending|${settings.limit}|${settings.rating}`;
+        const cacheKey = `${settings.provider}|trending|${settings.limit}|${settings.rating}`;
         let gifs = searchCache.get(cacheKey);
         if (!gifs) {
             results.append(el('div', { class: 'loader' }));
             try {
-                gifs = (await trendingGifs(apiKey, settings)).map(normalizeGif);
+                const key = await resolveApiKey();
+                gifs = await trendingGifs(settings.provider, key, settings);
                 searchCache.set(cacheKey, gifs);
             } catch (err) {
                 if (view === 'landing') renderError(err);
@@ -294,7 +304,7 @@ function landingToggle(mode) {
 async function doSearch() {
     const term = $('#searchInput').value.trim();
     if (!term) return;
-    if (!apiKey) {
+    if (settings.provider === 'giphy' && !apiKey) {
         openSettings('Add your Giphy API key first.');
         return;
     }
@@ -306,7 +316,7 @@ async function doSearch() {
     results.innerHTML = '';
 
     // Repeats of a search this session are free, sparing the hourly quota.
-    const cacheKey = `${term}|${settings.limit}|${settings.rating}`;
+    const cacheKey = `${settings.provider}|${term}|${settings.limit}|${settings.rating}`;
     const cached = searchCache.get(cacheKey);
     if (cached) {
         renderResults(matchFavorites(term), cached);
@@ -315,37 +325,21 @@ async function doSearch() {
 
     results.append(el('div', { class: 'loader' }));
     try {
-        const gifs = (await searchGifs(apiKey, term, settings)).map(normalizeGif);
+        const key = await resolveApiKey();
+        const gifs = await searchGifs(settings.provider, key, term, settings);
         searchCache.set(cacheKey, gifs);
         // A newer keystroke may have superseded this response.
         if (view !== 'search' || $('#searchInput').value.trim() !== term) return;
         renderResults(matchFavorites(term), gifs);
     } catch (err) {
         renderError(err);
-        if (err.status === 401) openSettings('Giphy rejected the API key. Double-check it below.');
+        if (err.status === 401 && settings.provider === 'giphy') {
+            openSettings('Giphy rejected the API key. Double-check it below.');
+        }
     }
 }
 
 const searchCache = new Map();
-
-// Hardcoded until the Klipy adapter lands the real provider setting; keeps
-// ids namespaced ("giphy:<id>") from here on so favorites and usage never
-// collide with a second source.
-const PROVIDER = 'giphy';
-
-function normalizeGif(gif) {
-    const images = gif.images || {};
-    const fw = images.fixed_width || images.downsized || images.original || {};
-    return {
-        id: `${PROVIDER}:${gif.id}`,
-        title: gif.title || '',
-        preview: fw.url,
-        small: fw.url,
-        big: (images.original || images.downsized_large || images.fixed_width)?.url,
-        w: Number(fw.width) || 0,
-        h: Number(fw.height) || 0,
-    };
-}
 
 function matchFavorites(term) {
     const words = term.toLowerCase().split(/\s+/);
@@ -627,12 +621,22 @@ function closeSettings() {
 }
 
 function applySettingsToForm() {
+    $('#providerSelect').value = settings.provider;
+    $('#giphyKeySection').hidden = settings.provider !== 'giphy';
+    $('#giphyAttribution').hidden = settings.provider !== 'giphy';
+    $('#klipyAttribution').hidden = settings.provider !== 'klipy';
     $('#defaultActionSelect').value = settings.defaultAction;
     $('#limitSelect').value = String(settings.limit);
     $('#ratingSelect').value = settings.rating;
     $('#autoCloseCheck').checked = settings.autoClose;
     $('#liveSearchCheck').checked = settings.liveSearch;
-    $('#searchInput').placeholder = settings.liveSearch ? 'Search GIFs' : 'Search GIFs (press Enter)';
+    const base = settings.provider === 'klipy' ? 'Search KLIPY' : 'Search GIFs';
+    $('#searchInput').placeholder = settings.liveSearch ? base : `${base} (press Enter)`;
+}
+
+async function onProviderChange() {
+    settings = await saveSettings({ provider: $('#providerSelect').value });
+    applySettingsToForm();
 }
 
 async function onDefaultsChange() {
@@ -652,7 +656,7 @@ async function onSaveKey() {
     if (!key) return;
     status.textContent = 'Checking key…';
     try {
-        await validateKey(key);
+        await validateKey('giphy', key);
         await setApiKey(key);
         apiKey = key;
         status.textContent = '✓ Key saved and working.';
@@ -677,7 +681,9 @@ function renderError(err) {
 
     let message = err.message;
     if (err.status === 401) {
-        message = 'Giphy returned 401: the API key is bad or lacks access.';
+        message = settings.provider === 'klipy'
+            ? 'Klipy returned 401: the shared key was rejected.'
+            : 'Giphy returned 401: the API key is bad or lacks access.';
     }
     const note = el('div', { class: 'notification' }, el('p', {}, message));
     if (err.response) {
