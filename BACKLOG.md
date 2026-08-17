@@ -10,85 +10,42 @@ do but wait. Once approved, tag the release commit. If a reviewer comes back
 with questions, the permission justifications and test instructions they were
 given are in `dev/store-listing.md`.
 
-## Now: move to Klipy, then the web app
+## Now: finish the Klipy release
 
 Klipy (klipy.com/developers, docs.klipy.com) is free: test keys are limited to
 100 req/hour like Giphy dev keys, but **production keys are unlimited** (their
-model monetizes with optional ad content, not API fees). Account and test key
-are in hand.
+model monetizes with optional ad content, not API fees).
 
-The plan here used to be a proxy service that held the key server-side and
-cached responses in front of it. That is off the table. Klipy's integration
-requirements say API requests have to originate from the end user's browser
-or app, and that proxies, intermediaries and partner-operated caches each
-need written approval first. Their app key is a URL path segment and is meant
-to be visible in the client, so the proxy was never buying secrecy: it would
-only have moved the abuse surface off Klipy's infrastructure and onto an open
-endpoint of ours, which we would then have to rate-limit and pay for. Not
-worth building, and not worth asking permission to build.
+The extension talks to Klipy directly, and always will. A proxy holding the key
+server-side and caching responses is off the table: Klipy's integration
+requirements say requests have to originate from the end user's browser, and
+proxies, intermediaries and partner-operated caches each need written approval
+first. Their app key is a URL path segment meant to be visible in the client,
+so a proxy was never buying secrecy; it would only have moved the abuse surface
+onto an open endpoint of ours to rate-limit and pay for.
 
-So the extension talks to Klipy directly. **Done as of 2026-08-16:**
+Shipped, live, and in the commit log if the detail is ever needed: the Klipy
+adapter and provider setting, Klipy as the default for new installs while
+upgraders keep Giphy, provider-namespaced favorites and usage, shared-key
+delivery from `gifgo.app/config.json` on a daily refresh, and the web app
+itself at gifgo.app, PWA installable and redeployed from `server/` on every
+push to main.
 
-- Klipy adapter in `js/api.js`, alongside the Giphy one: `searchGifs`,
-  `trendingGifs`, and `validateKey` all take a provider argument now and
-  normalize each provider's response internally. A 401/403 from Klipy
-  triggers one `refreshKlipyKey()` + retry before giving up.
-- Provider setting: "Klipy (no key needed)" vs "Giphy (your own key)" in
-  settings. **Klipy is the default as of 2026-08-17**, so a new install
-  searches immediately with no key and no setup. Upgraders are left alone:
-  `getSettings()` treats a saved Giphy key with no provider recorded as a
-  deliberate choice and keeps them on Giphy until they switch. That covers
-  both a settings object predating the provider field and no settings object
-  at all, which is what someone who set a key and never touched a default
-  looks like.
-- "Search KLIPY" placeholder and a "Powered by KLIPY" footer link (the
-  watermark is optional per Klipy's docs, added anyway for parity with the
-  Giphy attribution).
-- Key delivery (`js/remoteConfig.js` + `js/background.js`, config.json on
-  `gifgo.app`): live, holding the real test key as of 2026-08-16.
+Left to do:
 
-Still open:
-
-- Request production access through the Partner Panel form once the
-  integration is tested; the test key's 100/hour is the same ceiling that
-  keeps `liveSearch` off today. Flip the `liveSearch` default to on for the
-  Klipy provider once the production key is live. Needs a live site and a
-  demonstration video first (in progress, see below).
-- Verify the adapter against a real Klipy response from inside the
-  extension itself, not just the harness's mocked shape (dev/notes/klipy-api.md)
-  and the earlier standalone `curl`.
-
-The web app: **live as of 2026-08-16** at gifgo.app, ahead of where this
-list originally put it (JP wanted a demo site before applying for Klipy
-production access). Confirmed working end to end from a fresh visitor: loads,
-provider switch, real Klipy search results, no console errors.
-
-- `server/index.html` mirrors popup.html but runs standalone: PWA
-  installable (`manifest.webmanifest`, a minimal `sw.js`), and
-  `server/chrome-shim.js` polyfills `chrome.storage.sync`/`local` with
-  `localStorage` so `js/popup.js`, `js/storage.js`, and `js/remoteConfig.js`
-  run completely unmodified. The one real gap versus the extension:
-  localStorage doesn't sync across devices, since there's no browser profile
-  for it to sync through.
-- "Reuses root js/ and css/ rather than copying them" turned out to need a
-  caveat: Cloudflare Workers assets only serves files inside
-  `wrangler.toml`'s `assets.directory` (`server/`), so a relative `../js/`
-  reference from `server/index.html` 404s once deployed even though it
-  resolves fine in local testing (which serves the whole repo tree).
-  `.github/workflows/deploy-server.yml` now stages `js/`, `css/`, and
-  `images/` into `server/` right before `wrangler deploy`, generated fresh
-  every deploy from the single source of truth and gitignored, so there's
-  still exactly one copy of each file in git — just not in the deployed
-  output. A Cloudflare Worker with static assets is what got created (not a
-  classic Pages project; Cloudflare's dashboard makes static sites that way
-  now), custom-domained to gifgo.app.
-- Found and fixed testing it live: `autoClose`'s `window.close()` closed the
-  whole browser tab after every copy, since the web app has no
-  `chrome.runtime` to gate it the way the extension popup does. Fixed with
-  an `isExtension` check in `js/popup.js`; the "Close after copying" setting
-  is hidden entirely outside the real extension now.
-- Not done: a 512px icon (only the 128px extension icon exists today), and
-  no offline caching in `sw.js` (installable, but not offline-capable yet).
+- **Bump `manifest.json`.** It still reads 2.0, which is the build sitting in
+  review. Nothing above can be submitted until that moves.
+- Request Klipy production access through the Partner Panel. That wanted a
+  live site and a demo video first; the site is done, the video is not. It
+  lifts the 100/hour ceiling, after which `liveSearch` can default on for
+  Klipy.
+- Verify the adapter against a real Klipy response from inside the extension
+  itself, rather than the harness mock and a standalone curl.
+- Exercise the 401/403 refresh-and-retry against an actual key rotation.
+- A 512px PWA icon (only the 128px extension one exists), and offline caching
+  in `server/sw.js`: it installs, but it is not offline-capable.
+- Port this session's UI changes into `dev/gifgo-demo.html` and republish the
+  artifact, which is now well behind the real thing.
 
 ## Then: Windows tray app (the flagship)
 
